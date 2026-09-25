@@ -2,11 +2,11 @@
 
 import type { RouteObject } from "react-router-dom";
 
-import ManageBookingPage from "../pages/manageBooking/manageBookingPage";
+import LiveTrackingDashboard from "../pages/liveTracking/dashboard";
 
 export const routes: RouteObject[] = [
   {
-    path: "/manage-booking",
-    element: <ManageBookingPage />,
+    path: "/tracking-dashboard",
+    element: <LiveTrackingDashboard />,
   },
 ];
