@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="36" height="64" viewBox="-18 -32 36 64">
+  <title>Drivado map marker — vehicle (nose points up; anchor at centre; rotate to heading)</title>
+  <defs>
+    <linearGradient id="gBody" gradientUnits="userSpaceOnUse" x1="-8.4" y1="-18" x2="8.4" y2="18">
+      <stop offset="0" stop-color="#565C68"/><stop offset=".18" stop-color="#2A2E38"/>
+      <stop offset=".55" stop-color="#14161D"/><stop offset="1" stop-color="#05060A"/>
+    </linearGradient>
+<linearGradient id="gGlass" gradientUnits="userSpaceOnUse" x1="-6.8" y1="-9" x2="6.8" y2="11">
+      <stop offset="0" stop-color="#5D667F"/><stop offset=".5" stop-color="#343B4E"/>
+      <stop offset="1" stop-color="#1E2331"/>
+    </linearGradient>
+<linearGradient id="gRoof" gradientUnits="userSpaceOnUse" x1="-5.3" y1="-4" x2="5.3" y2="7">
+      <stop offset="0" stop-color="#3E434F"/><stop offset=".5" stop-color="#20242D"/>
+      <stop offset="1" stop-color="#0D0F15"/>
+    </linearGradient>
+<linearGradient id="gCarLit" gradientUnits="userSpaceOnUse" x1="-8.4" y1="0" x2="8.4" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".22"/>
+      <stop offset=".4" stop-color="#FFFFFF" stop-opacity=".05"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+<radialGradient id="gShade"><stop offset="0" stop-color="#0C0E1C" stop-opacity=".34"/><stop offset="1" stop-color="#0C0E1C" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g id="ground-shadow"><ellipse cx="2.4" cy="5.5" rx="14.5" ry="25" fill="url(#gShade)"/></g>
+  <g id="vehicle">    <path d="M7.9,-8.4 C9.3,-8.5 10,-7.9 10,-7.1 C10,-6.4 9.3,-5.9 8.1,-5.9 Z" fill="#1B1E27"/>
+    <path d="M-7.9,-8.4 C-9.3,-8.5 -10,-7.9 -10,-7.1 C-10,-6.4 -9.3,-5.9 -8.1,-5.9 Z" fill="#1B1E27"/>
+    <clipPath id="clipSedan"><path d="M0,-22 C2.9,-22 4.6,-21.5 5.7,-20.5 C7.1,-19.2 7.8,-16.5 8.1,-12.7 C8.3,-9.6 8.4,-5 8.4,0 C8.4,5.4 8.3,10.1 8,13.5 C7.7,17.3 7,19.7 5.7,20.9 C4.7,21.7 3,22 0,22 C-3,22 -4.7,21.7 -5.7,20.9 C-7,19.7 -7.7,17.3 -8,13.5 C-8.3,10.1 -8.4,5.4 -8.4,0 C-8.4,-5 -8.3,-9.6 -8.1,-12.7 C-7.8,-16.5 -7.1,-19.2 -5.7,-20.5 C-4.6,-21.5 -2.9,-22 0,-22 Z"/></clipPath>
+    <path d="M0,-22 C2.9,-22 4.6,-21.5 5.7,-20.5 C7.1,-19.2 7.8,-16.5 8.1,-12.7 C8.3,-9.6 8.4,-5 8.4,0 C8.4,5.4 8.3,10.1 8,13.5 C7.7,17.3 7,19.7 5.7,20.9 C4.7,21.7 3,22 0,22 C-3,22 -4.7,21.7 -5.7,20.9 C-7,19.7 -7.7,17.3 -8,13.5 C-8.3,10.1 -8.4,5.4 -8.4,0 C-8.4,-5 -8.3,-9.6 -8.1,-12.7 C-7.8,-16.5 -7.1,-19.2 -5.7,-20.5 C-4.6,-21.5 -2.9,-22 0,-22 Z" fill="url(#gBody)"/>
+    <g clip-path="url(#clipSedan)">
+      <g fill="#07080C" fill-opacity=".85">
+        <rect x="7.3" y="-16.6" width="1.6" height="6" rx=".8"/>
+        <rect x="-8.9" y="-16.6" width="1.6" height="6" rx=".8"/>
+        <rect x="7.1" y="9" width="1.6" height="6" rx=".8"/>
+        <rect x="-8.7" y="9" width="1.6" height="6" rx=".8"/>
+      </g>
+      <path d="M-6.6,-9.2 C-4.4,-9.7 -2.2,-9.9 0,-9.9 C2.2,-9.9 4.4,-9.7 6.6,-9.2 C6.9,-3.4 7,5.8 6.6,11.9 C4.4,12.4 2.2,12.6 0,12.6 C-2.2,12.6 -4.4,12.4 -6.6,11.9 C-7,5.8 -6.9,-3.4 -6.6,-9.2 Z" fill="url(#gGlass)"/>
+      <path d="M-6.4,-3.6 Q-6.4,-4.4 -5.6,-4.4 H5.6 Q6.4,-4.4 6.4,-3.6 Q6.6,1.4 6.4,6.6 Q6.4,7.4 5.6,7.4 H-5.6 Q-6.4,7.4 -6.4,6.6 Q-6.6,1.4 -6.4,-3.6 Z" fill="url(#gRoof)"/>
+      <path d="M5.2,-3 H6.5 L6.55,0.9 H5.25 Z M5.25,2 H6.55 L6.5,6.5 H5.2 Z M-5.2,-3 H-6.5 L-6.55,0.9 H-5.25 Z M-5.25,2 H-6.55 L-6.5,6.5 H-5.2 Z" fill="url(#gGlass)" fill-rule="evenodd"/>
+      <path d="M-5,-4 H5" stroke="#FFFFFF" stroke-opacity=".13" stroke-width=".5" stroke-linecap="round"/>
+      <g stroke="#FFFFFF" stroke-opacity=".15" stroke-width=".6" stroke-linecap="round" fill="none">
+        <path d="M-3.2,-19.4 V-11.4"/><path d="M3.2,-19.4 V-11.4"/>
+        <path d="M6.9,-3.6 H8.6"/><path d="M6.9,7.2 H8.6"/>
+        <path d="M-6.9,-3.6 H-8.6"/><path d="M-6.9,7.2 H-8.6"/>
+      </g>
+      <g fill="#FFF7E6">
+        <path d="M3.2,-20.8 C4.3,-20.6 5.4,-20.2 6.3,-19.6 L5.9,-18.5 C5.1,-19 4.1,-19.3 3.1,-19.4 Z"/>
+        <path d="M-3.2,-20.8 C-4.3,-20.6 -5.4,-20.2 -6.3,-19.6 L-5.9,-18.5 C-5.1,-19 -4.1,-19.3 -3.1,-19.4 Z"/>
+      </g>
+      <g fill="#C93A44">
+        <path d="M2.8,19.4 C3.9,19.4 4.9,19.7 5.7,20.1 L5.3,21.2 C4.6,20.8 3.7,20.6 2.7,20.6 Z"/>
+        <path d="M-2.8,19.4 C-3.9,19.4 -4.9,19.7 -5.7,20.1 L-5.3,21.2 C-4.6,20.8 -3.7,20.6 -2.7,20.6 Z"/>
+      </g>
+      <path d="M0,-22 C2.9,-22 4.6,-21.5 5.7,-20.5 C7.1,-19.2 7.8,-16.5 8.1,-12.7 C8.3,-9.6 8.4,-5 8.4,0 C8.4,5.4 8.3,10.1 8,13.5 C7.7,17.3 7,19.7 5.7,20.9 C4.7,21.7 3,22 0,22 C-3,22 -4.7,21.7 -5.7,20.9 C-7,19.7 -7.7,17.3 -8,13.5 C-8.3,10.1 -8.4,5.4 -8.4,0 C-8.4,-5 -8.3,-9.6 -8.1,-12.7 C-7.8,-16.5 -7.1,-19.2 -5.7,-20.5 C-4.6,-21.5 -2.9,-22 0,-22 Z" fill="url(#gCarLit)"/>
+    </g>
+    <path d="M0,-22 C2.9,-22 4.6,-21.5 5.7,-20.5 C7.1,-19.2 7.8,-16.5 8.1,-12.7 C8.3,-9.6 8.4,-5 8.4,0 C8.4,5.4 8.3,10.1 8,13.5 C7.7,17.3 7,19.7 5.7,20.9 C4.7,21.7 3,22 0,22 C-3,22 -4.7,21.7 -5.7,20.9 C-7,19.7 -7.7,17.3 -8,13.5 C-8.3,10.1 -8.4,5.4 -8.4,0 C-8.4,-5 -8.3,-9.6 -8.1,-12.7 C-7.8,-16.5 -7.1,-19.2 -5.7,-20.5 C-4.6,-21.5 -2.9,-22 0,-22 Z" fill="none" stroke="#FFFFFF" stroke-opacity=".18" stroke-width=".9"/>
+  </g>
+</svg>

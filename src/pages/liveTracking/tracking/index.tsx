@@ -1,53 +1,39 @@
-import { X } from "lucide-react";
-import DIcon from "@/assets/images/d-icon.png";
-import { useState } from "react";
+import { useEffect } from "react";
+import { env } from "@/config/env";
+import { useAppDispatch, useAppSelector } from "@/redux/hooks";
+import {
+  selectDriverPosition,
+  startTracking,
+  stopTracking,
+} from "@/redux/tracking/trackingSlice";
+import { getAuthToken } from "@/utils/authToken";
+import CarMarker from "./components/CarMarker";
+import FollowDriver from "./components/FollowDriver";
+import TrackingMap from "./components/TrackingMap";
+import { TEST_TRIP_ID } from "./constants/tracking";
 
-interface TrackingMapProps {
-  isJourneyCompleted?: boolean;
-  dropoffLocation?: string;
-  timeLeft?: string;
-}
+const Tracking = () => {
+  const dispatch = useAppDispatch();
+  const position = useAppSelector(selectDriverPosition);
 
-const LiveTrackingMap = ({
-  isJourneyCompleted = true,
-  dropoffLocation = "The Savoy",
-  timeLeft = "1 min",
-}: TrackingMapProps) => {
-  const [showNotification, setShowNotification] = useState(isJourneyCompleted);
+  useEffect(() => {
+    const token = getAuthToken();
+    dispatch(
+      startTracking({ tripID: TEST_TRIP_ID, ...(token ? { token } : {}) }),
+    );
+    return () => {
+      dispatch(stopTracking());
+    };
+  }, [dispatch]);
+
   return (
-    <section className="relative h-full w-full overflow-hidden">
-      <div className="absolute inset-0">
-        <div className="flex h-full items-center justify-center bg-slate-100">
-          <span className="text-sm text-slate-400">Tracking Map</span>
-        </div>
-      </div>
-
-      {showNotification && (
-        <div className="absolute left-3 right-3 top-2 z-10 flex items-center gap-3 rounded-2xl bg-[#1d1e23] p-2.5 text-white shadow-md">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ">
-            <img src={DIcon} />
-          </div>
-
-          <div className="min-w-0 flex-1 text-left">
-            <p className="text-sm font-bold leading-5">Almost there!</p>
-
-            <p className="truncate text-xs font-medium text-[#a2a3a7]">
-              {dropoffLocation} - {timeLeft} away
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowNotification(false)}
-            aria-label="Close journey notification"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2b2b2d] text-emerald-50 transition-colors hover:bg-emerald-400"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      )}
-    </section>
+    <div className="h-svh w-full">
+      <TrackingMap apiKey={env.googleMapsApiKey} mapId={env.googleMapsMapId}>
+        <CarMarker position={position} />
+        <FollowDriver position={position} />
+      </TrackingMap>
+    </div>
   );
 };
 
-export default LiveTrackingMap;
+export default Tracking;
