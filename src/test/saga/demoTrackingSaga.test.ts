@@ -1,13 +1,16 @@
 import { createAppStore } from "@/redux/store";
-import { startTracking, stopTracking } from "@/redux/tracking/trackingSlice";
-import { trackingAction } from "@/sse/tracking-action";
+import { startTracking, stopTracking } from "@/store/tracking/trackingSlice";
+import { trackingAction } from "@/server/sse/tracking-action";
 import { DEMO_INTERVAL_MS } from "@/pages/liveTracking/tracking/constants/tracking";
 import { buildDemoPoints } from "@/pages/liveTracking/tracking/mock/demoPoints";
 
-vi.mock("@/pages/liveTracking/tracking/constants/tracking", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  USE_DEMO_TRACKING: true,
-}));
+vi.mock(
+  "@/pages/liveTracking/tracking/constants/tracking",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    USE_DEMO_TRACKING: true,
+  }),
+);
 
 vi.mock("@/sse/tracking-action", () => ({ trackingAction: vi.fn() }));
 
@@ -39,8 +42,14 @@ describe("demo tracking", () => {
     const store = start();
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(store.getState().tracking).toMatchObject({ connected: true, loading: false });
-    expect(store.getState().tracking.data).toMatchObject({ tripID: "T123", driverStatus: "ENROUTE" });
+    expect(store.getState().tracking).toMatchObject({
+      connected: true,
+      loading: false,
+    });
+    expect(store.getState().tracking.data).toMatchObject({
+      tripID: "T123",
+      driverStatus: "ENROUTE",
+    });
   });
 
   it("moves to the next point every interval", async () => {

@@ -7,7 +7,7 @@ import reducer, {
   trackingDisconnected,
   trackingError,
   trackingUpdate,
-} from "@/redux/tracking/trackingSlice";
+} from "@/store/tracking/trackingSlice";
 
 const initial: TrackingState = reducer(undefined, { type: "@@INIT" });
 
@@ -26,11 +26,19 @@ const point = (overrides: Partial<TrackingPayload> = {}): TrackingPayload => ({
 
 describe("trackingSlice reducers", () => {
   it("starts empty", () => {
-    expect(initial).toEqual({ data: null, loading: false, connected: false, error: null });
+    expect(initial).toEqual({
+      data: null,
+      loading: false,
+      connected: false,
+      error: null,
+    });
   });
 
   it("startTracking clears the previous trip and sets loading", () => {
-    const withData = reducer({ ...initial, error: "old" }, trackingUpdate(point()));
+    const withData = reducer(
+      { ...initial, error: "old" },
+      trackingUpdate(point()),
+    );
     expect(reducer(withData, startTracking({ tripID: "T999" }))).toEqual({
       ...initial,
       loading: true,
@@ -38,7 +46,9 @@ describe("trackingSlice reducers", () => {
   });
 
   it("trackingConnected marks the stream connected", () => {
-    expect(reducer({ ...initial, loading: true }, trackingConnected())).toMatchObject({
+    expect(
+      reducer({ ...initial, loading: true }, trackingConnected()),
+    ).toMatchObject({
       loading: false,
       connected: true,
       error: null,
@@ -49,21 +59,43 @@ describe("trackingSlice reducers", () => {
     const first = reducer(initial, trackingUpdate(point()));
     const second = reducer(first, trackingUpdate(point({ lat: 22.58 })));
     expect(second.data).toEqual(point({ lat: 22.58 }));
-    expect(second).toMatchObject({ loading: false, connected: true, error: null });
+    expect(second).toMatchObject({
+      loading: false,
+      connected: true,
+      error: null,
+    });
   });
 
   it("trackingDisconnected keeps the last location", () => {
-    const state = reducer(reducer(initial, trackingUpdate(point())), trackingDisconnected());
-    expect(state).toMatchObject({ connected: false, loading: false, data: point() });
+    const state = reducer(
+      reducer(initial, trackingUpdate(point())),
+      trackingDisconnected(),
+    );
+    expect(state).toMatchObject({
+      connected: false,
+      loading: false,
+      data: point(),
+    });
   });
 
   it("trackingError stores the message and keeps the last location", () => {
-    const state = reducer(reducer(initial, trackingUpdate(point())), trackingError("boom"));
-    expect(state).toMatchObject({ connected: false, loading: false, error: "boom", data: point() });
+    const state = reducer(
+      reducer(initial, trackingUpdate(point())),
+      trackingError("boom"),
+    );
+    expect(state).toMatchObject({
+      connected: false,
+      loading: false,
+      error: "boom",
+      data: point(),
+    });
   });
 
   it("stopTracking stops loading and connection", () => {
-    const state = reducer({ ...initial, loading: true, connected: true }, stopTracking());
+    const state = reducer(
+      { ...initial, loading: true, connected: true },
+      stopTracking(),
+    );
     expect(state).toMatchObject({ connected: false, loading: false });
   });
 });
@@ -75,7 +107,10 @@ describe("selectDriverPosition", () => {
 
   it("returns lat/lng of the latest location", () => {
     const tracking = reducer(initial, trackingUpdate(point()));
-    expect(selectDriverPosition({ tracking })).toEqual({ lat: 22.5726, lng: 88.3639 });
+    expect(selectDriverPosition({ tracking })).toEqual({
+      lat: 22.5726,
+      lng: 88.3639,
+    });
   });
 
   it("returns the same object while the location is unchanged", () => {

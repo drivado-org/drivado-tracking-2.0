@@ -1,20 +1,25 @@
 import type { AxiosResponse } from "axios";
-import { trackingAction } from "@/sse/tracking-action";
+import { trackingAction } from "@/server/sse/tracking-action";
 import { createAppStore } from "@/redux/store";
-import { startTracking, stopTracking } from "@/redux/tracking/trackingSlice";
+import { startTracking, stopTracking } from "@/store/tracking/trackingSlice";
 
-vi.mock("@/pages/liveTracking/tracking/constants/tracking", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  USE_DEMO_TRACKING: false,
-}));
+vi.mock(
+  "@/pages/liveTracking/tracking/constants/tracking",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    USE_DEMO_TRACKING: false,
+  }),
+);
 
 vi.mock("@/sse/tracking-action", () => ({ trackingAction: vi.fn() }));
 
 const trackingActionMock = vi.mocked(trackingAction);
 
 /** What axios returns with responseType "stream": the body is in data. */
-const axiosResponse = (status: number, data: ReadableStream<Uint8Array> | null) =>
-  ({ status, data }) as unknown as AxiosResponse<ReadableStream<Uint8Array>>;
+const axiosResponse = (
+  status: number,
+  data: ReadableStream<Uint8Array> | null,
+) => ({ status, data }) as unknown as AxiosResponse<ReadableStream<Uint8Array>>;
 
 /** A server stream the test writes to. */
 const fakeStream = () => {
@@ -50,7 +55,8 @@ const payload = (overrides: Record<string, unknown> = {}) => ({
 
 /** Let fetch promises, stream reads and saga effects run. */
 const settle = async () => {
-  for (let i = 0; i < 5; i++) await new Promise((resolve) => setTimeout(resolve, 0));
+  for (let i = 0; i < 5; i++)
+    await new Promise((resolve) => setTimeout(resolve, 0));
 };
 
 const lastSignal = () => trackingActionMock.mock.lastCall?.[1] as AbortSignal;
@@ -80,7 +86,10 @@ describe("trackingSaga", () => {
       { tripID: "T123", token: "Bearer abc" },
       expect.any(AbortSignal),
     );
-    expect(store.getState().tracking).toMatchObject({ connected: true, loading: false });
+    expect(store.getState().tracking).toMatchObject({
+      connected: true,
+      loading: false,
+    });
   });
 
   it("puts each location into redux", async () => {
@@ -89,7 +98,10 @@ describe("trackingSaga", () => {
 
     stream.sendEvent(payload());
     await settle();
-    expect(store.getState().tracking.data).toMatchObject({ lat: 22.5726, lng: 88.3639 });
+    expect(store.getState().tracking.data).toMatchObject({
+      lat: 22.5726,
+      lng: 88.3639,
+    });
 
     stream.sendEvent(payload({ lat: 22.5736 }));
     await settle();
@@ -126,28 +138,34 @@ describe("trackingSaga", () => {
     });
   });
 
-  it.each(["COMPLETED", "NOSHOW"])("closes the stream on %s", async (status) => {
-    const stream = fakeStream();
-    const store = await startWith(stream.response);
+  it.each(["COMPLETED", "NOSHOW"])(
+    "closes the stream on %s",
+    async (status) => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
 
-    stream.sendEvent(payload({ driverStatus: status }));
-    await settle();
+      stream.sendEvent(payload({ driverStatus: status }));
+      await settle();
 
-    expect(store.getState().tracking).toMatchObject({
-      connected: false,
-      data: { driverStatus: status },
-    });
-    expect(lastSignal().aborted).toBe(true);
-  });
+      expect(store.getState().tracking).toMatchObject({
+        connected: false,
+        data: { driverStatus: status },
+      });
+      expect(lastSignal().aborted).toBe(true);
+    },
+  );
 
-  it.each([401, 500])("puts an error when the API returns %i", async (status) => {
-    const store = await startWith(axiosResponse(status, null));
-    expect(store.getState().tracking).toMatchObject({
-      connected: false,
-      loading: false,
-      error: `Tracking API failed with status ${status}`,
-    });
-  });
+  it.each([401, 500])(
+    "puts an error when the API returns %i",
+    async (status) => {
+      const store = await startWith(axiosResponse(status, null));
+      expect(store.getState().tracking).toMatchObject({
+        connected: false,
+        loading: false,
+        error: `Tracking API failed with status ${status}`,
+      });
+    },
+  );
 
   it("puts an error when the request throws", async () => {
     const store = await startWith(Promise.reject(new Error("Failed to fetch")));
@@ -177,7 +195,10 @@ describe("trackingSaga", () => {
     stream.close();
     await settle();
 
-    expect(store.getState().tracking).toMatchObject({ connected: false, data: { lat: 22.5726 } });
+    expect(store.getState().tracking).toMatchObject({
+      connected: false,
+      data: { lat: 22.5726 },
+    });
   });
 
   it("stopTracking aborts the request", async () => {
@@ -188,7 +209,10 @@ describe("trackingSaga", () => {
     await settle();
 
     expect(lastSignal().aborted).toBe(true);
-    expect(store.getState().tracking).toMatchObject({ connected: false, loading: false });
+    expect(store.getState().tracking).toMatchObject({
+      connected: false,
+      loading: false,
+    });
   });
 
   it("a new startTracking closes the old stream", async () => {

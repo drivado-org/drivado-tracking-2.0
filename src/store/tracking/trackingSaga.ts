@@ -4,8 +4,8 @@ import { buffers, eventChannel, type EventChannel } from "redux-saga";
 import { call, put, race, take, takeLatest } from "redux-saga/effects";
 
 import { USE_DEMO_TRACKING } from "@/pages/liveTracking/tracking/constants/tracking";
-import { createSseParser } from "@/sse/sseParser";
-import { trackingAction } from "@/sse/tracking-action";
+import { createSseParser } from "@/server/sse/sseParser";
+import { trackingAction } from "@/server/sse/tracking-action";
 import type { TrackingActionPayload } from "@/types/tracking";
 import { parseTrackingPayload } from "@/validators/trackingPayload";
 import {
@@ -15,7 +15,7 @@ import {
   trackingDisconnected,
   trackingError,
   trackingUpdate,
-} from "@/redux/tracking/trackingSlice";
+} from "@/store/tracking/trackingSlice";
 import { demoTrackingSaga } from "./demoTrackingSaga";
 
 type StreamEvent =

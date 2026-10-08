@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
 import { createAppStore } from "@/redux/store";
-import { trackingUpdate } from "@/redux/tracking/trackingSlice";
-import { trackingAction } from "@/sse/tracking-action";
+import { trackingUpdate } from "@/store/tracking/trackingSlice";
+import { trackingAction } from "@/server/sse/tracking-action";
 import type { TrackingPayload } from "@/types/tracking";
 import { AUTH_TOKEN_STORAGE_KEY } from "@/utils/authToken";
 import { TEST_TRIP_ID } from "@/pages/liveTracking/tracking/constants/tracking";
@@ -13,10 +13,13 @@ vi.mock("@/config/env", () => ({
   env: { googleMapsApiKey: "test-key", googleMapsMapId: null },
 }));
 
-vi.mock("@/pages/liveTracking/tracking/constants/tracking", async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  USE_DEMO_TRACKING: false,
-}));
+vi.mock(
+  "@/pages/liveTracking/tracking/constants/tracking",
+  async (importOriginal) => ({
+    ...(await importOriginal<object>()),
+    USE_DEMO_TRACKING: false,
+  }),
+);
 
 // Never resolves: the tests drive redux directly.
 vi.mock("@/sse/tracking-action", () => ({
@@ -32,7 +35,10 @@ vi.mock("@vis.gl/react-google-maps", () => ({
   ),
   useMap: () => fakeMap,
   AdvancedMarker: (props: { position: unknown; children?: ReactNode }) => (
-    <div data-testid="car-marker" data-position={JSON.stringify(props.position)}>
+    <div
+      data-testid="car-marker"
+      data-position={JSON.stringify(props.position)}
+    >
       {props.children}
     </div>
   ),
@@ -110,7 +116,13 @@ describe("Tracking page", () => {
     });
 
     const marker = screen.getByTestId("car-marker");
-    expect(JSON.parse(marker.dataset.position!)).toEqual({ lat: 22.5736, lng: 88.3639 });
-    expect(fakeMap.panTo).toHaveBeenLastCalledWith({ lat: 22.5736, lng: 88.3639 });
+    expect(JSON.parse(marker.dataset.position!)).toEqual({
+      lat: 22.5736,
+      lng: 88.3639,
+    });
+    expect(fakeMap.panTo).toHaveBeenLastCalledWith({
+      lat: 22.5736,
+      lng: 88.3639,
+    });
   });
 });

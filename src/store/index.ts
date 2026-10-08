@@ -1,10 +1,13 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
-import rootSaga from "@/saga";
-import trackingReducer from "./tracking/trackingSlice";
+
+import rootSaga from "@/store/tracking";
+import trackingReducer from "@/store/tracking/trackingSlice";
+import liveBookingReducer from "@/store/liveBooking/liveBookingSlice";
 
 const rootReducer = combineReducers({
   tracking: trackingReducer,
+  liveBooking: liveBookingReducer,
 });
 
 export const createAppStore = () => {
@@ -13,7 +16,9 @@ export const createAppStore = () => {
   const store = configureStore({
     reducer: rootReducer,
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware({ thunk: false }).concat(sagaMiddleware),
+      getDefaultMiddleware({
+        thunk: false,
+      }).concat(sagaMiddleware),
   });
 
   sagaMiddleware.run(rootSaga);

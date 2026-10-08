@@ -5,7 +5,7 @@ import {
   selectDriverPosition,
   startTracking,
   stopTracking,
-} from "@/redux/tracking/trackingSlice";
+} from "@/store/tracking/trackingSlice";
 import { getAuthToken } from "@/utils/authToken";
 import CarMarker from "./components/CarMarker";
 import FollowDriver from "./components/FollowDriver";
@@ -18,7 +18,9 @@ const Tracking = () => {
 
   useEffect(() => {
     const token = getAuthToken();
-    dispatch(startTracking({ tripID: TEST_TRIP_ID, ...(token ? { token } : {}) }));
+    dispatch(
+      startTracking({ tripID: TEST_TRIP_ID, ...(token ? { token } : {}) }),
+    );
     return () => {
       dispatch(stopTracking());
     };

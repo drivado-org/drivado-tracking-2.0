@@ -9,11 +9,17 @@ import {
   trackingConnected,
   trackingDisconnected,
   trackingUpdate,
-} from "@/redux/tracking/trackingSlice";
+} from "@/store/tracking/trackingSlice";
 
 /** Plays demo points into redux exactly like trackingSaga does with real SSE data. */
-export function* demoTrackingSaga(action: PayloadAction<TrackingActionPayload>) {
-  const points = buildDemoPoints(action.payload.tripID, Date.now(), DEMO_INTERVAL_MS);
+export function* demoTrackingSaga(
+  action: PayloadAction<TrackingActionPayload>,
+) {
+  const points = buildDemoPoints(
+    action.payload.tripID,
+    Date.now(),
+    DEMO_INTERVAL_MS,
+  );
 
   console.log("TRACKING demo mode:", points.length, "points");
 
