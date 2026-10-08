@@ -12,6 +12,7 @@ import DashboardHeader from "./components/DashboardHeader";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
 import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
+import Tracking from "../tracking/index";
 
 const LiveTrackingDashboard = () => {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
@@ -110,7 +111,7 @@ const LiveTrackingDashboard = () => {
 
       {/* Tracking Map */}
       <div className="order-1 h-full w-full md:order-2 md:h-full md:flex-1">
-        <LiveTrackingMap />
+        <Tracking />
       </div>
     </div>
   );

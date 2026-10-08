@@ -1,4 +1,4 @@
-import { createSseParser } from "@/sse/sseParser";
+import { createSseParser } from "@/server/sse/sseParser";
 
 const setup = () => {
   const messages: string[] = [];
@@ -23,10 +23,10 @@ describe("createSseParser", () => {
 
   it("joins an event split across chunks mid-line", () => {
     const { messages, parser } = setup();
-    parser.push('da');
+    parser.push("da");
     parser.push('ta: {"lat":22.5');
-    parser.push('726}\n');
-    parser.push('\n');
+    parser.push("726}\n");
+    parser.push("\n");
     expect(messages).toEqual(['{"lat":22.5726}']);
   });
 

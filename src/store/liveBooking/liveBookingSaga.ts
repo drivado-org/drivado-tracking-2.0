@@ -1,6 +1,6 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 
-import { getDriverDetailsApi } from "@/server/liveBooking/liveBookingApi";
+import { getDriverDetailsApi } from "@/server/api/liveBookingApi";
 import type { DriverData } from "@/types/liveBooking";
 
 import {

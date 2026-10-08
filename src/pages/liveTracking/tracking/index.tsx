@@ -5,7 +5,7 @@ import {
   selectDriverPosition,
   startTracking,
   stopTracking,
-} from "@/redux/tracking/trackingSlice";
+} from "@/store/tracking/trackingSlice";
 import { getAuthToken } from "@/utils/authToken";
 import CarMarker from "./components/CarMarker";
 import FollowDriver from "./components/FollowDriver";
