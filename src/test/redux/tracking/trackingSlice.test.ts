@@ -6,6 +6,7 @@ import reducer, {
   trackingConnected,
   trackingDisconnected,
   trackingError,
+  trackingLocationUpdate,
   trackingUpdate,
 } from "@/store/tracking/trackingSlice";
 
@@ -64,6 +65,49 @@ describe("trackingSlice reducers", () => {
       connected: true,
       error: null,
     });
+  });
+
+  it("trackingUpdate ignores a point older than the current one", () => {
+    const current = reducer(initial, trackingUpdate(point()));
+    const late = reducer(
+      current,
+      trackingUpdate(point({ lat: 1, timestamp: "2026-09-15T12:30:10.000Z" })),
+    );
+    expect(late.data).toEqual(point());
+  });
+
+  it("trackingUpdate accepts a point with the same timestamp", () => {
+    const current = reducer(initial, trackingUpdate(point()));
+    expect(reducer(current, trackingUpdate(point({ lat: 22.6 }))).data?.lat).toBe(22.6);
+  });
+
+  it("trackingLocationUpdate moves the car and keeps the trip ids", () => {
+    const current = reducer(initial, trackingUpdate(point()));
+    const moved = reducer(
+      current,
+      trackingLocationUpdate({ lat: 22.6, lng: 88.4, timestamp: "2026-09-15T12:30:16.000Z" }),
+    );
+    expect(moved.data).toEqual(
+      point({ lat: 22.6, lng: 88.4, timestamp: "2026-09-15T12:30:16.000Z" }),
+    );
+    expect(moved).toMatchObject({ loading: false, connected: true, error: null });
+  });
+
+  it("trackingLocationUpdate ignores a point older than the current one", () => {
+    const current = reducer(initial, trackingUpdate(point()));
+    const late = reducer(
+      current,
+      trackingLocationUpdate({ lat: 1, lng: 1, timestamp: "2026-09-15T12:30:10.000Z" }),
+    );
+    expect(late.data).toEqual(point());
+  });
+
+  it("trackingLocationUpdate does nothing before the first snapshot", () => {
+    const state = reducer(
+      initial,
+      trackingLocationUpdate({ lat: 22.6, lng: 88.4, timestamp: "2026-09-15T12:30:16.000Z" }),
+    );
+    expect(state.data).toBeNull();
   });
 
   it("trackingDisconnected keeps the last location", () => {

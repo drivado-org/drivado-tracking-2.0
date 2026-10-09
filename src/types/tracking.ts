@@ -11,17 +11,27 @@ export interface TrackingPayload {
   driverID: string;
   bookingID: string;
   tripID: string;
-  tripType: TripType;
-  driverStatus: DriverStatus;
+  /** null when missing or unknown — backend plans to drop it. */
+  tripType: TripType | null;
+  /** null when missing or unknown — backend plans to drop it. */
+  driverStatus: DriverStatus | null;
   lat: number;
   lng: number;
+  /** ISO string, from location.timestamp / clientTimeUTC / timestamp. */
   timestamp: string;
   sequence: number | null;
 }
 
+/** `event: location` after the snapshot: position only, no trip ids. */
+export interface LocationUpdate {
+  lat: number;
+  lng: number;
+  /** ISO string. */
+  timestamp: string;
+}
+
 export interface TrackingActionPayload {
   tripID: string;
-  token?: string;
 }
 
 export interface TrackingState {

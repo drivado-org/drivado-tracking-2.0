@@ -24,6 +24,18 @@ describe("env.googleMapsApiKey", () => {
   });
 });
 
+describe("env.trackingApiBaseUrl", () => {
+  it("returns the url without a trailing slash", async () => {
+    vi.stubEnv("VITE_TRACKING_API_BASE_URL", " https://testapi.drivado.com/ ");
+    expect((await loadEnv()).trackingApiBaseUrl).toBe("https://testapi.drivado.com");
+  });
+
+  it.each(["", "   ", undefined])("returns null for %p (use the dev proxy)", async (value) => {
+    vi.stubEnv("VITE_TRACKING_API_BASE_URL", value);
+    expect((await loadEnv()).trackingApiBaseUrl).toBeNull();
+  });
+});
+
 describe("env.googleMapsMapId", () => {
   it("returns the trimmed map id when set", async () => {
     vi.stubEnv("VITE_GOOGLE_MAPS_MAP_ID", " abc123 ");

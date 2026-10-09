@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { Provider } from "react-redux";
-import { createAppStore } from "@/redux/store";
+import { createAppStore } from "@/store";
 import { trackingUpdate } from "@/store/tracking/trackingSlice";
 import { trackingAction } from "@/server/sse/tracking-action";
 import type { TrackingPayload } from "@/types/tracking";
-import { AUTH_TOKEN_STORAGE_KEY } from "@/utils/authToken";
 import { TEST_TRIP_ID } from "@/pages/liveTracking/tracking/constants/tracking";
 import Tracking from "@/pages/liveTracking/tracking";
 
@@ -13,16 +12,8 @@ vi.mock("@/config/env", () => ({
   env: { googleMapsApiKey: "test-key", googleMapsMapId: null },
 }));
 
-vi.mock(
-  "@/pages/liveTracking/tracking/constants/tracking",
-  async (importOriginal) => ({
-    ...(await importOriginal<object>()),
-    USE_DEMO_TRACKING: false,
-  }),
-);
-
 // Never resolves: the tests drive redux directly.
-vi.mock("@/sse/tracking-action", () => ({
+vi.mock("@/server/sse/tracking-action", () => ({
   trackingAction: vi.fn(() => new Promise(() => {})),
 }));
 
@@ -69,29 +60,18 @@ const renderPage = () => {
   return { store, ...utils };
 };
 
-afterEach(() => {
-  localStorage.clear();
-});
-
 describe("Tracking page", () => {
   it("renders the google map", () => {
     renderPage();
     expect(screen.getByTestId("google-map")).toBeInTheDocument();
   });
 
-  it("starts tracking with the token from localStorage", () => {
-    localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, "Bearer abc");
+  it("starts the live stream for the trip", () => {
     renderPage();
     expect(trackingAction).toHaveBeenCalledWith(
-      { tripID: TEST_TRIP_ID, token: "Bearer abc" },
+      { tripID: TEST_TRIP_ID },
       expect.any(AbortSignal),
     );
-  });
-
-  it("starts tracking without a token when localStorage has none", () => {
-    renderPage();
-    const [request] = vi.mocked(trackingAction).mock.lastCall!;
-    expect(request).toEqual({ tripID: TEST_TRIP_ID });
   });
 
   it("stops tracking on unmount", () => {

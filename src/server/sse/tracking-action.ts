@@ -1,14 +1,17 @@
 import axios from "axios";
+import { env } from "@/config/env";
 import type { TrackingActionPayload } from "@/types/tracking";
 
-export const trackingAction = async (payload: TrackingActionPayload, signal?: AbortSignal) => {
+export const trackingAction = async (
+  payload: TrackingActionPayload,
+  signal?: AbortSignal,
+) => {
+  const baseUrl = env.trackingApiBaseUrl ?? "";
+
   const response = await axios.get<ReadableStream<Uint8Array>>(
-    `https://testapi.drivado.com/api/v2/realtime/trips/${payload.tripID}/stream`,
+    `https://testapi.drivado.com/realtime/realtime/trips/${encodeURIComponent(payload.tripID)}/stream`,
     {
-      headers: {
-        Authorization: payload.token,
-      },
-      // SSE never ends: "fetch" + "stream" gives us the data while it arrives.
+      headers: { Accept: "text/event-stream" },
       adapter: "fetch",
       responseType: "stream",
       signal,
