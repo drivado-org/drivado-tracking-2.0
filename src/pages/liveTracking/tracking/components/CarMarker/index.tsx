@@ -9,7 +9,6 @@ type CarMarkerProps = {
   position: LatLng | null;
 };
 
-/** The car, centered on its live position. */
 const CarMarker = ({ position }: CarMarkerProps) => {
   if (!position) return null;
 

@@ -4,6 +4,7 @@ import {
   type PayloadAction,
 } from "@reduxjs/toolkit";
 import type {
+  LocationUpdate,
   TrackingActionPayload,
   TrackingPayload,
   TrackingState,
@@ -37,12 +38,30 @@ const trackingSlice = createSlice({
     },
 
     trackingUpdate: (state, action: PayloadAction<TrackingPayload>) => {
-      state.data = action.payload;
+      // A late point (older than the one shown) would move the car backwards.
+      const isOlder =
+        state.data !== null &&
+        Date.parse(action.payload.timestamp) < Date.parse(state.data.timestamp);
+      if (!isOlder) state.data = action.payload;
 
       state.loading = false;
 
       state.connected = true;
 
+      state.error = null;
+    },
+
+    /** Moves the car of the current trip; ids come from the last snapshot. */
+    trackingLocationUpdate: (state, action: PayloadAction<LocationUpdate>) => {
+      if (state.data === null) return;
+      if (Date.parse(action.payload.timestamp) < Date.parse(state.data.timestamp)) return;
+
+      state.data.lat = action.payload.lat;
+      state.data.lng = action.payload.lng;
+      state.data.timestamp = action.payload.timestamp;
+
+      state.loading = false;
+      state.connected = true;
       state.error = null;
     },
 
@@ -68,6 +87,7 @@ export const {
   startTracking,
   trackingConnected,
   trackingUpdate,
+  trackingLocationUpdate,
   trackingDisconnected,
   trackingError,
   stopTracking,
@@ -85,7 +105,3 @@ export const selectDriverPosition = createSelector(
 );
 
 export default trackingSlice.reducer;
-
-// EventSource()
-
-// WebSocket()

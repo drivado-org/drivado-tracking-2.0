@@ -1,8 +1,5 @@
-/** Hardcoded until the trip id comes from the route/query. */
-export const TEST_TRIP_ID = "T123";
+export const TEST_TRIP_ID = "D101S";
 
-/** true → play demo points instead of calling the SSE API. Set false when the backend is ready. */
-export const USE_DEMO_TRACKING = true;
+export const RECONNECT_BASE_DELAY_MS = 1000;
 
-/** How often a demo location is sent, like the backend would. */
-export const DEMO_INTERVAL_MS = 2000;
+export const RECONNECT_MAX_DELAY_MS = 30_000;
