@@ -6,7 +6,6 @@ import {
   startTracking,
   stopTracking,
 } from "@/store/tracking/trackingSlice";
-import { getAuthToken } from "@/utils/authToken";
 import CarMarker from "./components/CarMarker";
 import FollowDriver from "./components/FollowDriver";
 import TrackingMap from "./components/TrackingMap";
@@ -17,10 +16,7 @@ const Tracking = () => {
   const position = useAppSelector(selectDriverPosition);
 
   useEffect(() => {
-    const token = getAuthToken();
-    dispatch(
-      startTracking({ tripID: TEST_TRIP_ID, ...(token ? { token } : {}) }),
-    );
+    dispatch(startTracking({ tripID: TEST_TRIP_ID }));
     return () => {
       dispatch(stopTracking());
     };
