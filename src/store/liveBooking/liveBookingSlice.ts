@@ -23,6 +23,7 @@ const liveBookingSlice = createSlice({
     },
 
     getDriverDetailsSuccess: (state, action: PayloadAction<DriverData>) => {
+      console.log("Success payload:", action.payload);
       state.loading = false;
       state.driver = action.payload;
     },
