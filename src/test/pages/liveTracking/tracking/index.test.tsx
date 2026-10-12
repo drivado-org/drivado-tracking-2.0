@@ -5,7 +5,7 @@ import { createAppStore } from "@/store";
 import { trackingUpdate } from "@/store/tracking/trackingSlice";
 import { trackingAction } from "@/server/sse/tracking-action";
 import type { TrackingPayload } from "@/types/tracking";
-import { TEST_TRIP_ID } from "@/pages/liveTracking/tracking/constants/tracking";
+const TEST_TRIP_ID = "D101S";
 import Tracking from "@/pages/liveTracking/tracking";
 
 vi.mock("@/config/env", () => ({
@@ -54,7 +54,7 @@ const renderPage = () => {
   const store = createAppStore();
   const utils = render(
     <Provider store={store}>
-      <Tracking />
+      <Tracking tripId={TEST_TRIP_ID} />
     </Provider>,
   );
   return { store, ...utils };

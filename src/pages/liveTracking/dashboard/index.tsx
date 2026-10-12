@@ -8,6 +8,7 @@ import JourneyDetails, { type JourneyData } from "./components/JourneyDetails";
 import BookingDetails, { type BookingData } from "./components/BookingDetails";
 import BookingId, { type BookingIdData } from "./components/BookingId";
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import DashboardHeader from "./components/DashboardHeader";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
@@ -15,6 +16,7 @@ import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
 import Tracking from "../tracking/index";
 
 const LiveTrackingDashboard = () => {
+  const { tripId } = useParams<{ tripId: string }>();
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
   const dispatch = useDispatch();
@@ -111,7 +113,7 @@ const LiveTrackingDashboard = () => {
 
       {/* Tracking Map */}
       <div className="order-1 h-full w-full md:order-2 md:h-full md:flex-1">
-        <Tracking />
+        {tripId && <Tracking tripId={tripId} />}
       </div>
     </div>
   );

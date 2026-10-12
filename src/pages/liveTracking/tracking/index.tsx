@@ -9,18 +9,21 @@ import {
 import CarMarker from "./components/CarMarker";
 import FollowDriver from "./components/FollowDriver";
 import TrackingMap from "./components/TrackingMap";
-import { TEST_TRIP_ID } from "./constants/tracking";
 
-const Tracking = () => {
+interface TrackingProps {
+  tripId: string;
+}
+
+const Tracking = ({ tripId }: TrackingProps) => {
   const dispatch = useAppDispatch();
   const position = useAppSelector(selectDriverPosition);
 
   useEffect(() => {
-    dispatch(startTracking({ tripID: TEST_TRIP_ID }));
+    dispatch(startTracking({ tripID: tripId }));
     return () => {
       dispatch(stopTracking());
     };
-  }, [dispatch]);
+  }, [dispatch, tripId]);
 
   return (
     <div className="h-svh w-full">
