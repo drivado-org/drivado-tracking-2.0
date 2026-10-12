@@ -14,7 +14,6 @@ const axiosResponse = (
   data: ReadableStream<Uint8Array> | null,
 ) => ({ status, data }) as unknown as AxiosResponse<ReadableStream<Uint8Array>>;
 
-/** A server stream the test writes to. */
 const fakeStream = () => {
   let controller!: ReadableStreamDefaultController<Uint8Array>;
   const body = new ReadableStream<Uint8Array>({
@@ -155,7 +154,10 @@ describe("trackingSaga", () => {
     const stream = fakeStream();
     const store = await startWith(stream.response);
 
-    stream.sendEvent({ lat: 22.6, lng: 88.4, timestamp: "2026-10-08T12:32:55Z" }, "location");
+    stream.sendEvent(
+      { lat: 22.6, lng: 88.4, timestamp: "2026-10-08T12:32:55Z" },
+      "location",
+    );
     await settle();
     expect(store.getState().tracking.data).toBeNull();
 
@@ -187,13 +189,30 @@ describe("trackingSaga", () => {
 
     stream.sendEvent({
       data: [
-        { driverID: "D1", bookingID: "B1", tripID: "T123", lat: 22.1, lng: 88.1, clientTimeUTC: "2026-10-03T07:15:31Z" },
-        { driverID: "D1", bookingID: "B1", tripID: "T123", lat: 22.0, lng: 88.0, clientTimeUTC: "2026-10-03T07:15:29Z" },
+        {
+          driverID: "D1",
+          bookingID: "B1",
+          tripID: "T123",
+          lat: 22.1,
+          lng: 88.1,
+          clientTimeUTC: "2026-10-03T07:15:31Z",
+        },
+        {
+          driverID: "D1",
+          bookingID: "B1",
+          tripID: "T123",
+          lat: 22.0,
+          lng: 88.0,
+          clientTimeUTC: "2026-10-03T07:15:29Z",
+        },
       ],
     });
     await settle();
 
-    expect(store.getState().tracking.data).toMatchObject({ lat: 22.1, lng: 88.1 });
+    expect(store.getState().tracking.data).toMatchObject({
+      lat: 22.1,
+      lng: 88.1,
+    });
   });
 
   it("handles an event split across network chunks", async () => {
@@ -231,7 +250,9 @@ describe("trackingSaga", () => {
     const store = await startWith(stream.response);
 
     stream.sendEvent(payload());
-    stream.sendEvent(payload({ lat: 1, timestamp: "2026-09-15T12:30:00.000Z" }));
+    stream.sendEvent(
+      payload({ lat: 1, timestamp: "2026-09-15T12:30:00.000Z" }),
+    );
     await settle();
 
     expect(store.getState().tracking.data).toMatchObject({ lat: 22.5726 });
@@ -348,7 +369,9 @@ describe("trackingSaga", () => {
         data: { lat: 22.5726 },
       });
 
-      second.sendEvent(payload({ lat: 22.6, timestamp: "2026-09-15T12:30:20.000Z" }));
+      second.sendEvent(
+        payload({ lat: 22.6, timestamp: "2026-09-15T12:30:20.000Z" }),
+      );
       await settle();
       expect(store.getState().tracking.data).toMatchObject({ lat: 22.6 });
     });
@@ -394,7 +417,9 @@ describe("trackingSaga", () => {
     });
 
     it("stopTracking during the wait cancels the reconnect", async () => {
-      const store = await startWith(Promise.reject(new Error("Failed to fetch")));
+      const store = await startWith(
+        Promise.reject(new Error("Failed to fetch")),
+      );
 
       store.dispatch(stopTracking());
       await vi.advanceTimersByTimeAsync(60_000);
