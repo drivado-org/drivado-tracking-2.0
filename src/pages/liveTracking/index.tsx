@@ -32,6 +32,30 @@ const LiveTracking = ({
             {tripId && <Tracking tripId={tripId} />}
           </div>
         </div>
+        {showNotification && (
+          <div className="absolute left-3 right-3 top-2 z-10 flex items-center gap-3 rounded-2xl bg-[#1d1e23] p-2.5 text-white shadow-md">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ">
+              <img src={DIcon} />
+            </div>
+
+            <div className="min-w-0 flex-1 text-left">
+              <p className="text-sm font-bold leading-5">Almost there!</p>
+
+              <p className="truncate text-xs font-medium text-[#a2a3a7]">
+                {dropoffLocation} - {timeLeft} away
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowNotification(false)}
+              aria-label="Close journey notification"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2b2b2d] text-emerald-50 transition-colors hover:bg-emerald-400"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

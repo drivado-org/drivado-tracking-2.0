@@ -1,9 +1,9 @@
 import { combineReducers, configureStore } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
 
-import rootSaga from "@/store/tracking";
 import trackingReducer from "@/store/tracking/trackingSlice";
 import liveBookingReducer from "@/store/liveBooking/liveBookingSlice";
+import rootSaga from "./rootSaga";
 
 const rootReducer = combineReducers({
   tracking: trackingReducer,
