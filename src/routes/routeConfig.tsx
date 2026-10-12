@@ -1,9 +1,7 @@
 import { Navigate } from "react-router-dom";
-
 import type { RouteObject } from "react-router-dom";
-
-import LiveTrackingDashboard from "../pages/liveTracking/dashboard";
 import TripNotFound from "../pages/liveTracking/tripNotFound";
+import LiveTracking from "@/pages/liveTracking";
 
 export const routes: RouteObject[] = [
   {
@@ -16,7 +14,7 @@ export const routes: RouteObject[] = [
   },
   {
     path: "/tracking/:tripId",
-    element: <LiveTrackingDashboard />,
+    element: <LiveTracking />,
   },
   {
     path: "*",

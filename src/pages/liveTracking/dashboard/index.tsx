@@ -2,28 +2,23 @@ import BookingStatus, {
   type BookingStatusData,
 } from "./components/BookingStatus";
 import DriverDetails from "./components/DriverDetails";
-import LiveTrackingMap from "../tracking/index";
 import TripMetrics, { type TripMetricsData } from "./components/TripMetrics";
 import JourneyDetails, { type JourneyData } from "./components/JourneyDetails";
 import BookingDetails, { type BookingData } from "./components/BookingDetails";
 import BookingId, { type BookingIdData } from "./components/BookingId";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import DashboardHeader from "./components/DashboardHeader";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
 import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
-import Tracking from "../tracking/index";
 
 const LiveTrackingDashboard = () => {
-  const { tripId } = useParams<{ tripId: string }>();
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
   const dispatch = useDispatch();
 
-  const { driver, loading, error } = useSelector(
-    (state: RootState) => state.liveBooking,
-  );
+  const { driver } = useSelector((state: RootState) => state.liveBooking);
+  console.log("Driver details from Redux:", driver);
 
   useEffect(() => {
     dispatch(getDriverDetailsRequest());
@@ -62,7 +57,7 @@ const LiveTrackingDashboard = () => {
 
   const bookingStatuses: BookingStatusData[] = [
     {
-      label: "En route",
+      label: "Enroute",
       time: "16:44",
       completed: true,
     },
@@ -109,11 +104,6 @@ const LiveTrackingDashboard = () => {
           <JourneyDetails journey={journeyData} />
           <BookingDetails booking={bookingData} />
         </div>
-      </div>
-
-      {/* Tracking Map */}
-      <div className="order-1 h-full w-full md:order-2 md:h-full md:flex-1">
-        {tripId && <Tracking tripId={tripId} />}
       </div>
     </div>
   );
