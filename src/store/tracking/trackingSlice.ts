@@ -104,4 +104,17 @@ export const selectDriverPosition = createSelector(
   (lat, lng) => (lat === undefined || lng === undefined ? null : { lat, lng }),
 );
 
+/** Car position with its timestamp: the noise filter needs the time between points. */
+export const selectDriverPoint = createSelector(
+  [
+    (state: TrackingRootState) => state.tracking.data?.lat,
+    (state: TrackingRootState) => state.tracking.data?.lng,
+    (state: TrackingRootState) => state.tracking.data?.timestamp,
+  ],
+  (lat, lng, timestamp) =>
+    lat === undefined || lng === undefined || timestamp === undefined
+      ? null
+      : { lat, lng, timestamp },
+);
+
 export default trackingSlice.reducer;
