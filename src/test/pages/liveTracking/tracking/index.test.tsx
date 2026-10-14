@@ -86,22 +86,54 @@ describe("Tracking page", () => {
     expect(screen.queryByTestId("car-marker")).not.toBeInTheDocument();
   });
 
-  it("shows the car at the location from redux and keeps it in view", () => {
+  it("glides the car to the new location from redux and keeps it in view", () => {
+    vi.useFakeTimers();
     const { store } = renderPage();
     act(() => {
       store.dispatch(trackingUpdate(point()));
     });
     act(() => {
-      store.dispatch(trackingUpdate(point({ lat: 22.5736 })));
+      store.dispatch(
+        trackingUpdate(
+          point({ lat: 22.5736, timestamp: "2026-09-15T12:30:30.000Z" }),
+        ),
+      );
     });
 
+    // The map pans to the new point at once; the car animates there.
+    expect(fakeMap.panTo).toHaveBeenLastCalledWith({
+      lat: 22.5736,
+      lng: 88.3639,
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(2100);
+    });
     const marker = screen.getByTestId("car-marker");
     expect(JSON.parse(marker.dataset.position!)).toEqual({
       lat: 22.5736,
       lng: 88.3639,
     });
-    expect(fakeMap.panTo).toHaveBeenLastCalledWith({
-      lat: 22.5736,
+    vi.useRealTimers();
+  });
+
+  it("ignores a GPS spike", () => {
+    const { store } = renderPage();
+    act(() => {
+      store.dispatch(trackingUpdate(point()));
+    });
+    act(() => {
+      // ~11 km in one second.
+      store.dispatch(
+        trackingUpdate(
+          point({ lat: 22.6726, timestamp: "2026-09-15T12:30:16.000Z" }),
+        ),
+      );
+    });
+
+    const marker = screen.getByTestId("car-marker");
+    expect(JSON.parse(marker.dataset.position!)).toEqual({
+      lat: 22.5726,
       lng: 88.3639,
     });
   });
