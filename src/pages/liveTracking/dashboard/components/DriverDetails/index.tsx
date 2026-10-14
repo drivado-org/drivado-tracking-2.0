@@ -6,17 +6,25 @@ interface DriverDetailsProps {
 }
 
 const DriverDetails = ({ driver }: DriverDetailsProps) => {
-  const { name, rating, trips, vehicleRegistration } = driver;
+  const { driverName, rating, trips, vehicleRegistration } = driver;
   return (
     <section className="rounded-2xl bg-[#f7f4f5] px-3 py-3 mx-4 mb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900">
-            <span className="text-sm font-semibold text-white">AM</span>
+            {/* <span className="text-sm font-semibold text-white">AM</span> */}
+            <span className="text-sm font-semibold text-white">
+              {driverName.trim().split(/\s+/).length > 1
+                ? (
+                    driverName.trim().split(/\s+/)[0][0] +
+                    driverName.trim().split(/\s+/).at(-1)![0]
+                  ).toUpperCase()
+                : driverName.trim()[0]?.toUpperCase()}
+            </span>
           </div>
           <div className="text-left">
             <p className="text-sm font-semibold leading-5 text-slate-800">
-              {name}
+              {driverName}
             </p>
 
             <div className="mt-0.5 flex items-center gap-0.5 text-xs">

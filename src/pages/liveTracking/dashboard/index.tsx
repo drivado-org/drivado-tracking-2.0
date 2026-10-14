@@ -12,13 +12,26 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
 import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
 
-const LiveTrackingDashboard = () => {
+interface LiveTrackingDashboardProps {
+  onExpandedChange: (expanded: boolean) => void;
+}
+
+const LiveTrackingDashboard = ({
+  onExpandedChange,
+}: LiveTrackingDashboardProps) => {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+
+  const handleToggle = () => {
+    setIsDetailsExpanded((prev) => {
+      const next = !prev;
+      onExpandedChange(next);
+      return next;
+    });
+  };
 
   const dispatch = useDispatch();
 
   const { driver } = useSelector((state: RootState) => state.liveBooking);
-  console.log("Driver details from Redux:", driver);
 
   useEffect(() => {
     dispatch(getDriverDetailsRequest());
@@ -78,26 +91,29 @@ const LiveTrackingDashboard = () => {
   ];
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-white md:flex-row">
+    <div className="relative flex h-full min-h-0 w-full flex-col bg-white">
+      {/* Mobile Header */}
+      <DashboardHeader
+        isExpanded={isDetailsExpanded}
+        // handleToggle={() => setIsDetailsExpanded((prev) => !prev)}
+        handleToggle={handleToggle}
+      />
+
+      {/* Dashboard Content */}
       <div
         className={`
-          order-2 flex w-full flex-col md:order-1 md:h-full md:w-95 md:min-w-95 md:shrink-0
+          order-2 flex min-h-0 w-full flex-col md:order-1 md:h-full md:w-95 md:min-w-95 md:shrink-0
           ${isDetailsExpanded ? "h-[85%]" : "h-[48%]"}
         `}
       >
-        {/* Mobile Header */}
-        <DashboardHeader
-          isExpanded={isDetailsExpanded}
-          onToggle={() => setIsDetailsExpanded((prev) => !prev)}
-        />
         <TripMetrics metrics={tripMetricsData} />
         <BookingId booking={bookingIdData} />
         <BookingStatus statuses={bookingStatuses} />
         {driver && <DriverDetails driver={driver} />}
         <div
           className={`
-            overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
-            ${isDetailsExpanded ? "block" : "hidden"}
+            shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
+            ${isDetailsExpanded ? "block max-h-85" : "hidden"}
             md:block md:max-h-85
           `}
         >
