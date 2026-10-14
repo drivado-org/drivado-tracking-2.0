@@ -2,14 +2,17 @@ import DrivadoLogo from "@/assets/images/drivado_logo-189x56.png";
 
 interface DashboardHeaderProps {
   isExpanded: boolean;
-  onToggle: () => void;
+  handleToggle: () => void;
 }
 
-const DashboardHeader = ({ isExpanded, onToggle }: DashboardHeaderProps) => {
+const DashboardHeader = ({
+  isExpanded,
+  handleToggle,
+}: DashboardHeaderProps) => {
   return (
-    <div className="relative h-0 md:hidden">
+    <div className="relative z-20 h-0 shrink-0 overflow-visible md:flex md:h-14 md:items-center md:bg-white md:px-5">
       {/* Drivado Logo */}
-      <div className="absolute -top-9 left-5 z-10 flex h-12 w-32 items-center justify-center rounded-t-[18px] rounded-br-[18px] bg-white">
+      <div className="absolute -top-9 left-5 flex h-12 w-32 items-center justify-center rounded-t-[18px] rounded-br-[18px] bg-white md:static md:top-auto md:left-auto">
         <img
           src={DrivadoLogo}
           alt="Drivado"
@@ -20,9 +23,10 @@ const DashboardHeader = ({ isExpanded, onToggle }: DashboardHeaderProps) => {
       {/* Grey Toggle Handle */}
       <button
         type="button"
-        onClick={onToggle}
+        onClick={handleToggle}
         aria-label={isExpanded ? "Collapse dashboard" : "Expand dashboard"}
-        className="absolute left-1/2 top-0 z-10 -translate-x-1/2 px-6 py-3"
+        aria-expanded={isExpanded}
+        className="absolute left-1/2 top-0 -translate-x-1/2 px-6 py-3 md:hidden"
       >
         <span className="block h-1 w-11 rounded-full bg-slate-300 transition-colors hover:bg-slate-400" />
       </button>
