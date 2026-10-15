@@ -29,7 +29,7 @@ const CarMarker = ({ position, heading = 0 }: CarMarkerProps) => {
         draggable={false}
         style={{
           transform: `rotate(${heading}deg)`,
-          transition: "transform 300ms linear",
+          transition: "transform 5000ms linear",
         }}
       />
     </AdvancedMarker>

@@ -11,6 +11,12 @@ import DashboardHeader from "./components/DashboardHeader";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
 import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
+import { selectEta } from "@/store/route/routeSlice";
+import {
+  formatClockTime,
+  toEtaMinutes,
+  toKilometres,
+} from "@/utils/etaFormat";
 
 interface LiveTrackingDashboardProps {
   onExpandedChange: (expanded: boolean) => void;
@@ -32,6 +38,7 @@ const LiveTrackingDashboard = ({
   const dispatch = useDispatch();
 
   const { driver } = useSelector((state: RootState) => state.liveBooking);
+  const eta = useSelector(selectEta);
 
   useEffect(() => {
     dispatch(getDriverDetailsRequest());
@@ -62,10 +69,11 @@ const LiveTrackingDashboard = ({
     vehicleType: "Standard Sedan",
   };
 
+  // From the stream's `eta` events; "--" until the first one.
   const tripMetricsData: TripMetricsData = {
-    duration: 68,
-    distance: 12.5,
-    dropOffTime: "17:53",
+    duration: eta ? toEtaMinutes(eta.etaSeconds) : null,
+    distance: eta ? toKilometres(eta.distanceMeters) : null,
+    dropOffTime: eta ? formatClockTime(eta.arrivalTime) : null,
   };
 
   const bookingStatuses: BookingStatusData[] = [

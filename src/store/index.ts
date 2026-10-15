@@ -3,11 +3,13 @@ import createSagaMiddleware from "redux-saga";
 
 import trackingReducer from "@/store/tracking/trackingSlice";
 import liveBookingReducer from "@/store/liveBooking/liveBookingSlice";
+import routeReducer from "@/store/route/routeSlice";
 import rootSaga from "./rootSaga";
 
 const rootReducer = combineReducers({
   tracking: trackingReducer,
   liveBooking: liveBookingReducer,
+  route: routeReducer,
 });
 
 export const createAppStore = () => {

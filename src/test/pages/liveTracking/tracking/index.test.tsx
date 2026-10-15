@@ -17,7 +17,15 @@ vi.mock("@/server/sse/tracking-action", () => ({
   trackingAction: vi.fn(() => new Promise(() => {})),
 }));
 
-const fakeMap = { panTo: vi.fn() };
+const fakeMap = {
+  center: { lat: 0, lng: 0 },
+  getCenter: () => ({ lat: () => fakeMap.center.lat, lng: () => fakeMap.center.lng }),
+  // Plain functions: restoreMocks in vitest.config would wipe a vi.fn implementation.
+  moveCamera: (options: { center: { lat: number; lng: number } }) => {
+    fakeMap.center = { ...options.center };
+  },
+  addListener: () => ({ remove: () => {} }),
+};
 
 vi.mock("@vis.gl/react-google-maps", () => ({
   APIProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
@@ -25,6 +33,7 @@ vi.mock("@vis.gl/react-google-maps", () => ({
     <div data-testid="google-map">{children}</div>
   ),
   useMap: () => fakeMap,
+  useMapsLibrary: () => null,
   AdvancedMarker: (props: { position: unknown; children?: ReactNode }) => (
     <div
       data-testid="car-marker"
@@ -86,7 +95,7 @@ describe("Tracking page", () => {
     expect(screen.queryByTestId("car-marker")).not.toBeInTheDocument();
   });
 
-  it("glides the car to the new location from redux and keeps it in view", () => {
+  it("drives the car to the new location from redux and keeps it in view", () => {
     vi.useFakeTimers();
     const { store } = renderPage();
     act(() => {
@@ -100,24 +109,22 @@ describe("Tracking page", () => {
       );
     });
 
-    // The map pans to the new point at once; the car animates there.
-    expect(fakeMap.panTo).toHaveBeenLastCalledWith({
-      lat: 22.5736,
-      lng: 88.3639,
-    });
-
     act(() => {
-      vi.advanceTimersByTime(2100);
+      vi.advanceTimersByTime(8000);
     });
     const marker = screen.getByTestId("car-marker");
     expect(JSON.parse(marker.dataset.position!)).toEqual({
       lat: 22.5736,
       lng: 88.3639,
     });
+    expect((globalThis as any).__dbg).toEqual({});
+    // The camera followed the car.
+    expect(fakeMap.center.lat).toBeCloseTo(22.5736, 6);
     vi.useRealTimers();
   });
 
   it("ignores a GPS spike", () => {
+    vi.useFakeTimers();
     const { store } = renderPage();
     act(() => {
       store.dispatch(trackingUpdate(point()));
@@ -130,11 +137,15 @@ describe("Tracking page", () => {
         ),
       );
     });
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
 
     const marker = screen.getByTestId("car-marker");
     expect(JSON.parse(marker.dataset.position!)).toEqual({
       lat: 22.5726,
       lng: 88.3639,
     });
+    vi.useRealTimers();
   });
 });

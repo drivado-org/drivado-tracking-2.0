@@ -51,6 +51,33 @@ const payload = ({
   ...rest,
 });
 
+/** Real backend output for trip T146 (route shortened). */
+const SAMPLE_STREAM = `event: eta
+data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_S","driverStatus":"","eta":0,"distance":0}
+
+event: location
+data: {"Lat":22.47128,"Lng":88.38932,"Timestamp":"2026-10-15T07:18:32.059547Z"}
+
+event: route_change
+data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","routePath":[{"lat":22.47128,"lng":88.38932000000001},{"lat":22.471570000000003,"lng":88.38917000000001},{"lat":22.471330000000002,"lng":88.38863},{"lat":22.456290000000003,"lng":88.39985}]}
+
+event: eta
+data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","eta":651,"distance":2666}
+
+event: vehicle_meta
+data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","reroute":false}
+
+event: location
+data: {"Lat":22.471505388984138,"Lng":88.38920341949095,"Timestamp":"2026-10-15T07:18:33.832644Z"}
+
+event: eta
+data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","eta":644,"distance":2638.222221017453}
+
+event: vehicle_meta
+data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","reroute":false,"bearing":334}
+
+`;
+
 /** Let fetch promises, stream reads and saga effects run. */
 const settle = async () => {
   for (let i = 0; i < 5; i++) {
@@ -150,7 +177,81 @@ describe("trackingSaga", () => {
     expect(console.warn).not.toHaveBeenCalled();
   });
 
-  it("ignores a location event that arrives before the snapshot", async () => {
+  describe("eta, route_change and vehicle_meta", () => {
+    const ids = { driverID: "DRIVER_123", bookingID: "B1", tripID: "T123", tripType: "TRIP_S" };
+    const routePath = [
+      { lat: 22.5726, lng: 88.3639 },
+      { lat: 22.5736, lng: 88.3649 },
+    ];
+
+    it("puts each event into redux without moving the car", async () => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      stream.sendEvent({ ...ids, eta: 300, distance: 1500 }, "eta");
+      stream.sendEvent({ ...ids, driverStatus: "ENROUTE", routePath }, "route_change");
+      stream.sendEvent(
+        { ...ids, driverStatus: "ENROUTE", reroute: false, bearing: 90 },
+        "vehicle_meta",
+      );
+      await settle();
+
+      const { route, tracking } = store.getState();
+      expect(route.eta).toMatchObject({ ...ids, etaSeconds: 300, distanceMeters: 1500 });
+      expect(route.route).toEqual({ ...ids, driverStatus: "ENROUTE", routePath });
+      expect(route.vehicleMeta).toEqual({
+        ...ids,
+        driverStatus: "ENROUTE",
+        reroute: false,
+        bearing: 90,
+      });
+      expect(tracking.data).toBeNull();
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it("ignores invalid events, other trips, trip_stage and status", async () => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      stream.sendEvent({ ...ids, driverStatus: "ENROUTE", routePath: [routePath[0]] }, "route_change");
+      stream.sendEvent({ ...ids, eta: -1, distance: 10 }, "eta");
+      stream.sendEvent({ ...ids, tripID: "OTHER", eta: 60, distance: 10 }, "eta");
+      stream.sendEvent({ stage: "PICKUP" }, "trip_stage");
+      stream.sendEvent({ status: "ok" }, "status");
+      await settle();
+
+      expect(store.getState().route).toEqual({ route: null, eta: null, vehicleMeta: null });
+      expect(store.getState().tracking.data).toBeNull();
+    });
+
+    it("updates the driver status of the trip", async () => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      stream.sendEvent(payload());
+      stream.sendEvent({ ...ids, driverStatus: "POB", reroute: false, bearing: 10 }, "vehicle_meta");
+      await settle();
+
+      expect(store.getState().tracking.data?.driverStatus).toBe("POB");
+    });
+
+    it("ends the trip on COMPLETED without reconnecting", async () => {
+      vi.useFakeTimers();
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      const calls = trackingActionMock.mock.calls.length;
+
+      stream.sendEvent({ ...ids, driverStatus: "COMPLETED", eta: 0, distance: 0 }, "eta");
+      await settle();
+      expect(store.getState().tracking.connected).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      expect(trackingActionMock).toHaveBeenCalledTimes(calls);
+    });
+  });
+
+  it("moves the car with a location event that arrives before any snapshot", async () => {
     const stream = fakeStream();
     const store = await startWith(stream.response);
 
@@ -160,10 +261,43 @@ describe("trackingSaga", () => {
     );
     await settle();
     expect(store.getState().tracking.data).toBeNull();
+    expect(store.getState().tracking.points).toEqual([
+      { lat: 22.6, lng: 88.4, timestamp: "2026-10-08T12:32:55.000Z" },
+    ]);
 
-    stream.sendEvent(payload());
+    stream.sendEvent(payload({ timestamp: "2026-10-08T12:32:56Z" }));
     await settle();
     expect(store.getState().tracking.data).toMatchObject({ lat: 22.5726 });
+  });
+
+  it("handles the live backend stream (no snapshot, capitalized location keys)", async () => {
+    const stream = fakeStream();
+    trackingActionMock.mockReturnValue(Promise.resolve(stream.response));
+    const store = createAppStore();
+    stores.push(store);
+    store.dispatch(startTracking({ tripID: "T146" }));
+    await settle();
+
+    stream.send(SAMPLE_STREAM);
+    await settle();
+
+    const { tracking, route } = store.getState();
+    expect(tracking.points).toEqual([
+      { lat: 22.47128, lng: 88.38932, timestamp: "2026-10-15T07:18:32.059Z" },
+      {
+        lat: 22.471505388984138,
+        lng: 88.38920341949095,
+        timestamp: "2026-10-15T07:18:33.832Z",
+      },
+    ]);
+    expect(tracking.driverStatus).toBe("POB");
+    expect(tracking.connected).toBe(true);
+    // The opening { eta: 0, distance: 0 } is skipped; the newest real estimate is kept.
+    expect(route.eta).toMatchObject({ etaSeconds: 644, distanceMeters: 2638.222221017453 });
+    expect(route.route?.routePath).toHaveLength(4);
+    // The first vehicle_meta had no bearing; the second one's is kept.
+    expect(route.vehicleMeta).toMatchObject({ bearing: 334, reroute: false });
+    expect(console.warn).not.toHaveBeenCalled();
   });
 
   it("reads the exact snapshot the backend sends", async () => {

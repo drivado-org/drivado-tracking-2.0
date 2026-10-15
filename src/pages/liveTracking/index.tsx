@@ -4,6 +4,9 @@ import { useState } from "react";
 import DIcon from "@/assets/images/d-icon.png";
 import { X } from "lucide-react";
 import { useParams } from "react-router-dom";
+import { useAppSelector } from "@/redux/hooks";
+import { selectEta } from "@/store/route/routeSlice";
+import { toEtaMinutes } from "@/utils/etaFormat";
 
 interface TrackingMapProps {
   isJourneyCompleted?: boolean;
@@ -20,6 +23,8 @@ const LiveTracking = ({
   const [isDashboardExpanded, setIsDashboardExpanded] = useState(false);
 
   const { tripId } = useParams<{ tripId: string }>();
+  const eta = useAppSelector(selectEta);
+  const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : timeLeft;
 
   return (
     <div className="relative flex h-dvh w-full overflow-hidden flex-col md:flex-row bg-slate-100">
@@ -38,7 +43,7 @@ const LiveTracking = ({
               <p className="text-sm font-bold leading-5">Almost there!</p>
 
               <p className="truncate text-xs font-medium text-[#a2a3a7]">
-                {dropoffLocation} - {timeLeft} away
+                {dropoffLocation} - {etaTimeLeft} away
               </p>
             </div>
 
