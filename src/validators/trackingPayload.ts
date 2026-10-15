@@ -23,6 +23,7 @@ const TRIP_TYPES: readonly TripType[] = ["TRIP_S", "TRIP_D"];
 const DRIVER_STATUSES: readonly DriverStatus[] = [
   "ENROUTE",
   "ARRIVE",
+  "ARRIVED",
   "POB",
   "COMPLETED",
   "NOSHOW",
@@ -40,7 +41,7 @@ export const parseDriverStatus = (value: unknown): DriverStatus | null =>
 export const parseTripType = (value: unknown): TripType | null =>
   toEnumValue(TRIP_TYPES, value);
 
-const toPayloadObject = (raw: unknown): Record<string, unknown> | null => {
+export const toPayloadObject = (raw: unknown): Record<string, unknown> | null => {
   if (typeof raw === "string") {
     try {
       const parsed: unknown = JSON.parse(raw);
@@ -52,16 +53,19 @@ const toPayloadObject = (raw: unknown): Record<string, unknown> | null => {
   return isPlainObject(raw) ? raw : null;
 };
 
-/** lat/lng/timestamp live in `location` (SSE) or at the top level (location API). */
+/**
+ * lat/lng/timestamp live in `location` (snapshot), at the top level (location API),
+ * or at the top level capitalized: `event: location` sends { Lat, Lng, Timestamp }.
+ */
 const pickLocationFields = (payload: Record<string, unknown>) => {
   if ("location" in payload) {
     const location = isPlainObject(payload.location) ? payload.location : {};
     return { lat: location.lat, lng: location.lng, timestamp: location.timestamp };
   }
   return {
-    lat: payload.lat,
-    lng: payload.lng,
-    timestamp: payload.clientTimeUTC ?? payload.timestamp,
+    lat: payload.lat ?? payload.Lat,
+    lng: payload.lng ?? payload.Lng,
+    timestamp: payload.clientTimeUTC ?? payload.timestamp ?? payload.Timestamp,
   };
 };
 

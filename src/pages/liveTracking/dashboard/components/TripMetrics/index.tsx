@@ -1,7 +1,8 @@
+/** null → "--" until the ETA / route API answers. */
 export interface TripMetricsData {
-  duration: number;
-  distance: number;
-  dropOffTime: string;
+  duration: number | null;
+  distance: number | null;
+  dropOffTime: string | null;
 }
 
 interface TripMetricsProps {
@@ -19,7 +20,7 @@ const TripMetrics = ({ metrics }: TripMetricsProps) => {
 
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-[22px] font-semibold leading-none text-slate-900">
-              {duration}
+              {duration ?? "--"}
             </span>
 
             <span className="text-xs font-medium text-slate-500">min</span>
@@ -31,7 +32,7 @@ const TripMetrics = ({ metrics }: TripMetricsProps) => {
 
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-[22px] font-semibold leading-none text-slate-900">
-              {distance}
+              {distance ?? "--"}
             </span>
 
             <span className="text-xs font-medium text-slate-500">km</span>
@@ -43,7 +44,7 @@ const TripMetrics = ({ metrics }: TripMetricsProps) => {
 
           <div className="mt-1">
             <span className="text-[22px] font-semibold leading-none text-slate-900">
-              {dropOffTime}
+              {dropOffTime ?? "--"}
             </span>
           </div>
         </div>

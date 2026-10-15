@@ -3,7 +3,10 @@ import {
   createSlice,
   type PayloadAction,
 } from "@reduxjs/toolkit";
+import { MAX_TRACK_POINTS } from "@/pages/liveTracking/tracking/constants/tracking";
+import type { TrackPoint } from "@/types/geo";
 import type {
+  DriverStatus,
   LocationUpdate,
   TrackingActionPayload,
   TrackingPayload,
@@ -13,11 +16,37 @@ import type {
 const initialState: TrackingState = {
   data: null,
 
+  points: [],
+
+  driverStatus: null,
+
   loading: false,
 
   connected: false,
 
   error: null,
+};
+
+/**
+ * Adds a point at the end (newest last) and drops the oldest past MAX_TRACK_POINTS.
+ * A point older than the newest one is a late delivery and would move the car backwards: skipped.
+ * Returns whether the point was added.
+ */
+const pushPoint = (state: TrackingState, point: TrackPoint): boolean => {
+  const newest = state.points.at(-1);
+  if (newest && Date.parse(point.timestamp) < Date.parse(newest.timestamp)) return false;
+
+  state.points.push(point);
+  if (state.points.length > MAX_TRACK_POINTS) {
+    state.points.splice(0, state.points.length - MAX_TRACK_POINTS);
+  }
+  return true;
+};
+
+const markLive = (state: TrackingState) => {
+  state.loading = false;
+  state.connected = true;
+  state.error = null;
 };
 
 const trackingSlice = createSlice({
@@ -32,37 +61,33 @@ const trackingSlice = createSlice({
     }),
 
     trackingConnected: (state) => {
-      state.loading = false;
-      state.connected = true;
-      state.error = null;
+      markLive(state);
     },
 
+    /** Snapshot: the car's position plus the trip ids. */
     trackingUpdate: (state, action: PayloadAction<TrackingPayload>) => {
-      // A late point (older than the one shown) would move the car backwards.
-      const isOlder =
-        state.data !== null &&
-        Date.parse(action.payload.timestamp) < Date.parse(state.data.timestamp);
-      if (!isOlder) state.data = action.payload;
-
-      state.loading = false;
-
-      state.connected = true;
-
-      state.error = null;
+      const { lat, lng, timestamp, driverStatus } = action.payload;
+      if (pushPoint(state, { lat, lng, timestamp })) {
+        state.data = action.payload;
+        if (driverStatus) state.driverStatus = driverStatus;
+      }
+      markLive(state);
     },
 
-    /** Moves the car of the current trip; ids come from the last snapshot. */
+    /** `event: location`: position only. Moves the car with or without a snapshot. */
     trackingLocationUpdate: (state, action: PayloadAction<LocationUpdate>) => {
-      if (state.data === null) return;
-      if (Date.parse(action.payload.timestamp) < Date.parse(state.data.timestamp)) return;
+      if (pushPoint(state, action.payload) && state.data) {
+        state.data.lat = action.payload.lat;
+        state.data.lng = action.payload.lng;
+        state.data.timestamp = action.payload.timestamp;
+      }
+      markLive(state);
+    },
 
-      state.data.lat = action.payload.lat;
-      state.data.lng = action.payload.lng;
-      state.data.timestamp = action.payload.timestamp;
-
-      state.loading = false;
-      state.connected = true;
-      state.error = null;
+    /** Status from eta / route_change / vehicle_meta. */
+    trackingStatusUpdate: (state, action: PayloadAction<DriverStatus>) => {
+      state.driverStatus = action.payload;
+      if (state.data) state.data.driverStatus = action.payload;
     },
 
     trackingDisconnected: (state) => {
@@ -88,6 +113,7 @@ export const {
   trackingConnected,
   trackingUpdate,
   trackingLocationUpdate,
+  trackingStatusUpdate,
   trackingDisconnected,
   trackingError,
   stopTracking,
@@ -95,26 +121,20 @@ export const {
 
 type TrackingRootState = { tracking: TrackingState };
 
+/** Recent car points, newest last. Same array until a point is added. */
+export const selectTrackPoints = (state: TrackingRootState) => state.tracking.points;
+
+/** Newest car point, or null before the first one. */
+export const selectDriverPoint = (state: TrackingRootState) =>
+  state.tracking.points.at(-1) ?? null;
+
 /** Car position for the map. Memoized so the car only re-renders when it moves. */
 export const selectDriverPosition = createSelector(
   [
-    (state: TrackingRootState) => state.tracking.data?.lat,
-    (state: TrackingRootState) => state.tracking.data?.lng,
+    (state: TrackingRootState) => selectDriverPoint(state)?.lat,
+    (state: TrackingRootState) => selectDriverPoint(state)?.lng,
   ],
   (lat, lng) => (lat === undefined || lng === undefined ? null : { lat, lng }),
-);
-
-/** Car position with its timestamp: the noise filter needs the time between points. */
-export const selectDriverPoint = createSelector(
-  [
-    (state: TrackingRootState) => state.tracking.data?.lat,
-    (state: TrackingRootState) => state.tracking.data?.lng,
-    (state: TrackingRootState) => state.tracking.data?.timestamp,
-  ],
-  (lat, lng, timestamp) =>
-    lat === undefined || lng === undefined || timestamp === undefined
-      ? null
-      : { lat, lng, timestamp },
 );
 
 export default trackingSlice.reducer;

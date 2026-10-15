@@ -1,5 +1,7 @@
 import type { TrackingPayload, TrackingState } from "@/types/tracking";
+import { MAX_TRACK_POINTS } from "@/pages/liveTracking/tracking/constants/tracking";
 import reducer, {
+  selectDriverPoint,
   selectDriverPosition,
   startTracking,
   stopTracking,
@@ -7,6 +9,7 @@ import reducer, {
   trackingDisconnected,
   trackingError,
   trackingLocationUpdate,
+  trackingStatusUpdate,
   trackingUpdate,
 } from "@/store/tracking/trackingSlice";
 
@@ -29,6 +32,8 @@ describe("trackingSlice reducers", () => {
   it("starts empty", () => {
     expect(initial).toEqual({
       data: null,
+      points: [],
+      driverStatus: null,
       loading: false,
       connected: false,
       error: null,
@@ -102,12 +107,45 @@ describe("trackingSlice reducers", () => {
     expect(late.data).toEqual(point());
   });
 
-  it("trackingLocationUpdate does nothing before the first snapshot", () => {
-    const state = reducer(
-      initial,
-      trackingLocationUpdate({ lat: 22.6, lng: 88.4, timestamp: "2026-09-15T12:30:16.000Z" }),
-    );
+  it("trackingLocationUpdate moves the car before any snapshot", () => {
+    const location = { lat: 22.6, lng: 88.4, timestamp: "2026-09-15T12:30:16.000Z" };
+    const state = reducer(initial, trackingLocationUpdate(location));
     expect(state.data).toBeNull();
+    expect(state.points).toEqual([location]);
+    expect(state).toMatchObject({ loading: false, connected: true });
+  });
+
+  it("keeps the newest points last and drops the oldest past the cap", () => {
+    const at = (second: number) => ({
+      lat: 22.5 + second / 10_000,
+      lng: 88.4,
+      timestamp: new Date(Date.UTC(2026, 9, 15, 7, 0, second)).toISOString(),
+    });
+    let state = initial;
+    for (let second = 0; second < MAX_TRACK_POINTS + 5; second++) {
+      state = reducer(state, trackingLocationUpdate(at(second)));
+    }
+    expect(state.points).toHaveLength(MAX_TRACK_POINTS);
+    expect(state.points[0]).toEqual(at(5));
+    expect(state.points.at(-1)).toEqual(at(MAX_TRACK_POINTS + 4));
+    expect(selectDriverPoint({ tracking: state })).toEqual(at(MAX_TRACK_POINTS + 4));
+  });
+
+  it("does not add a late point to the track", () => {
+    const current = reducer(initial, trackingUpdate(point()));
+    const late = reducer(
+      current,
+      trackingLocationUpdate({ lat: 1, lng: 1, timestamp: "2026-09-15T12:30:10.000Z" }),
+    );
+    expect(late.points).toHaveLength(1);
+  });
+
+  it("trackingStatusUpdate keeps the status with or without a snapshot", () => {
+    expect(reducer(initial, trackingStatusUpdate("POB")).driverStatus).toBe("POB");
+
+    const withSnapshot = reducer(reducer(initial, trackingUpdate(point())), trackingStatusUpdate("POB"));
+    expect(withSnapshot.driverStatus).toBe("POB");
+    expect(withSnapshot.data?.driverStatus).toBe("POB");
   });
 
   it("trackingDisconnected keeps the last location", () => {

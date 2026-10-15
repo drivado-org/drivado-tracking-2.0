@@ -9,11 +9,24 @@ import {
 } from "@/pages/liveTracking/tracking/constants/tracking";
 import { createSseParser } from "@/server/sse/sseParser";
 import { trackingAction } from "@/server/sse/tracking-action";
-import type { TrackingActionPayload } from "@/types/tracking";
+import { TRACKING_EVENTS } from "@/server/sse/trackingEvents";
+import type { DriverStatus, TrackingActionPayload } from "@/types/tracking";
+import type { TripEventBase } from "@/types/route";
 import {
   parseLocationUpdate,
   parseTrackingMessage,
 } from "@/validators/trackingPayload";
+import {
+  isEtaPending,
+  parseEtaEvent,
+  parseRouteChange,
+  parseVehicleMeta,
+} from "@/validators/tripEventPayload";
+import {
+  etaUpdate,
+  routeChanged,
+  vehicleMetaUpdate,
+} from "@/store/route/routeSlice";
 import {
   startTracking,
   stopTracking,
@@ -21,11 +34,12 @@ import {
   trackingDisconnected,
   trackingError,
   trackingLocationUpdate,
+  trackingStatusUpdate,
   trackingUpdate,
 } from "@/store/tracking/trackingSlice";
 
 type StreamEvent =
-  | { type: "MESSAGE"; data: string }
+  | { type: "MESSAGE"; data: string; event: string }
   | { type: "CLOSED" }
   | { type: "ERROR"; error: unknown };
 
@@ -35,7 +49,9 @@ const createStreamChannel = (
   eventChannel((emit) => {
     const reader = body.getReader();
     const decoder = new TextDecoder();
-    const parser = createSseParser((data) => emit({ type: "MESSAGE", data }));
+    const parser = createSseParser((data, event) =>
+      emit({ type: "MESSAGE", data, event }),
+    );
     let closed = false;
 
     const read = async () => {
@@ -58,6 +74,29 @@ const createStreamChannel = (
       reader.cancel().catch(() => {});
     };
   }, buffers.expanding<StreamEvent>());
+
+const isTripFinished = (status: DriverStatus | null) =>
+  status === "COMPLETED" || status === "NOSHOW";
+
+/** Parses an eta / route_change / vehicle_meta event; null for another trip or a bad payload. */
+const readTripEvent = <T extends TripEventBase>(
+  parse: (raw: unknown) => T | null,
+  name: string,
+  data: string,
+  tripID: string,
+): T | null => {
+  const parsed = parse(data);
+  if (!parsed) {
+    console.warn(`TRACKING invalid ${name} ignored:`, data);
+    return null;
+  }
+  // Same trip whatever the case / spaces the URL uses (t146 vs T146).
+  if (parsed.tripID.trim().toUpperCase() !== tripID.trim().toUpperCase()) {
+    console.warn(`TRACKING ${name} for another trip ignored:`, parsed.tripID);
+    return null;
+  }
+  return parsed;
+};
 
 type ConnectionResult = {
   /** Trip finished (COMPLETED / NOSHOW): don't reconnect. */
@@ -116,6 +155,53 @@ function* streamTripOnce(action: PayloadAction<TrackingActionPayload>) {
       }
 
       // -----------------------------------------------
+      // Route, ETA and bearing events
+      // -----------------------------------------------
+
+      const tripID = action.payload.tripID;
+      let tripEvent: { driverStatus: DriverStatus | null } | null = null;
+
+      if (event.event === TRACKING_EVENTS.eta) {
+        const eta = readTripEvent(parseEtaEvent, event.event, event.data, tripID);
+        if (eta && !isEtaPending(eta)) yield put(etaUpdate(eta));
+        tripEvent = eta;
+      } else if (event.event === TRACKING_EVENTS.routeChange) {
+        const route = readTripEvent(parseRouteChange, event.event, event.data, tripID);
+        if (route) yield put(routeChanged(route));
+        tripEvent = route;
+      } else if (event.event === TRACKING_EVENTS.vehicleMeta) {
+        const meta = readTripEvent(parseVehicleMeta, event.event, event.data, tripID);
+        if (meta) yield put(vehicleMetaUpdate(meta));
+        tripEvent = meta;
+      }
+
+      if (
+        event.event === TRACKING_EVENTS.eta ||
+        event.event === TRACKING_EVENTS.routeChange ||
+        event.event === TRACKING_EVENTS.vehicleMeta
+      ) {
+        if (tripEvent?.driverStatus) {
+          yield put(trackingStatusUpdate(tripEvent.driverStatus));
+
+          if (isTripFinished(tripEvent.driverStatus)) {
+            console.log("TRACKING ended:", tripEvent.driverStatus);
+            yield put(trackingDisconnected());
+            result.ended = true;
+            return result;
+          }
+        }
+        continue;
+      }
+
+      // trip_stage / status: payload shape not agreed yet.
+      if (
+        event.event === TRACKING_EVENTS.tripStage ||
+        event.event === TRACKING_EVENTS.status
+      ) {
+        continue;
+      }
+
+      // -----------------------------------------------
       // Validate payload (one point or a { data: [...] } batch)
       // -----------------------------------------------
 
@@ -146,10 +232,7 @@ function* streamTripOnce(action: PayloadAction<TrackingActionPayload>) {
       // Trip finished (only when the backend still sends a status)
       // -----------------------------------------------
 
-      if (
-        location.driverStatus === "COMPLETED" ||
-        location.driverStatus === "NOSHOW"
-      ) {
+      if (isTripFinished(location.driverStatus)) {
         console.log("TRACKING ended:", location.driverStatus);
         yield put(trackingDisconnected());
         result.ended = true;
