@@ -5,6 +5,7 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
 
 export interface BookingData {
   passengerName: string;
@@ -99,13 +100,13 @@ const BookingDetails = ({ booking }: BookingDetailsProps) => {
             </div>
 
             {/* Contact support */}
-            <button
+            <Button
               type="button"
-              className="flex h-11.25 w-full items-center justify-center gap-2 rounded-xl bg-[#101216] text-[14px] font-semibold text-white transition hover:bg-[#1d1f24]"
+              className="flex h-11.25 w-full items-center justify-center gap-2 rounded-xl bg-[#101216] text-[14px] font-semibold text-white transition hover:bg-[#1d1f24] cursor-pointer"
             >
               <Headphones size={16} strokeWidth={2} />
               <span>Contact support</span>
-            </button>
+            </Button>
           </div>
         </AccordionContent>
       </AccordionItem>

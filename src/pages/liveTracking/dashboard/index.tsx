@@ -12,11 +12,28 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
 import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
 import { selectEta } from "@/store/route/routeSlice";
-import {
-  formatClockTime,
-  toEtaMinutes,
-  toKilometres,
-} from "@/utils/etaFormat";
+import { formatClockTime, toEtaMinutes, toKilometres } from "@/utils/etaFormat";
+
+type DriverStatus = "ENROUTE" | "ARRIVED" | "POB" | "COMPLETED" | "NOSHOW";
+
+const statusSteps = [
+  { label: "Enroute", value: "ENROUTE" },
+  { label: "Arrived", value: "ARRIVED" },
+  { label: "POB", value: "POB" },
+  { label: "Completed", value: "COMPLETED" },
+];
+
+const getBookingStatuses = (driverStatus?: string): BookingStatusData[] => {
+  const currentIndex = statusSteps.findIndex(
+    (step) => step.value === driverStatus,
+  );
+
+  return statusSteps.map((step, index) => ({
+    label: step.label,
+    completed: currentIndex >= 0 && index <= currentIndex,
+    active: currentIndex >= 0 && index === currentIndex + 1,
+  }));
+};
 
 interface LiveTrackingDashboardProps {
   onExpandedChange: (expanded: boolean) => void;
@@ -36,9 +53,40 @@ const LiveTrackingDashboard = ({
   };
 
   const dispatch = useDispatch();
-
-  const { driver } = useSelector((state: RootState) => state.liveBooking);
   const eta = useSelector(selectEta);
+
+  const { driver, sseConnected, sseEvents } = useSelector(
+    (state: RootState) => state.liveBooking,
+  );
+
+  const etaEvent =
+    (sseEvents.eta as {
+      driverStatus?: DriverStatus;
+      eta?: number;
+      distance?: number;
+    }) || undefined;
+
+  const routeEvent =
+    (sseEvents.route_change as { driverStatus?: DriverStatus }) || undefined;
+
+  // const driverStatus = eta?.driverStatus || routeEvent?.driverStatus;
+
+  // const routeChange = sseEvents.route_change as
+  //   | { driverStatus?: DriverStatus }
+  //   | undefined;
+
+  const driverStatus = eta?.driverStatus;
+
+  // const bookingStatuses = getBookingStatuses(driverStatus ?? undefined);
+
+  const statuses = getBookingStatuses(driverStatus ?? undefined);
+
+  console.log("SSE connected:", sseConnected);
+  console.log("ETA event:", etaEvent);
+  console.log("Route change event:", routeEvent);
+  console.log("Driver status:", driverStatus);
+  console.log("Booking statuses:", statuses);
+  console.log("Current driver status:", driverStatus);
 
   useEffect(() => {
     dispatch(getDriverDetailsRequest());
@@ -76,30 +124,37 @@ const LiveTrackingDashboard = ({
     dropOffTime: eta ? formatClockTime(eta.arrivalTime) : null,
   };
 
-  const bookingStatuses: BookingStatusData[] = [
-    {
-      label: "Enroute",
-      time: "16:44",
-      completed: true,
-    },
-    {
-      label: "Arrived",
-      time: "17:02",
-      completed: true,
-    },
-    {
-      label: "On board",
-      time: "17:08",
-      completed: true,
-    },
-    {
-      label: "Complete",
-      completed: true,
-    },
-  ];
+  // const bookingStatuses: BookingStatusData[] = [
+  //   {
+  //     label: "Enroute",
+  //     time: "16:44",
+  //     completed: true,
+  //   },
+  //   {
+  //     label: "Arrived",
+  //     time: "17:02",
+  //     completed: true,
+  //   },
+  //   {
+  //     label: "On board",
+  //     time: "17:08",
+  //     completed: true,
+  //   },
+  //   {
+  //     label: "Complete",
+  //     completed: true,
+  //   },
+  // ];
+
+  // const statuses: BookingStatusData[] = [
+  //   { label: "Enroute", completed: false },
+  //   { label: "Arrived", completed: false },
+  //   { label: "On Board", completed: false },
+  //   { label: "Completed", completed: false },
+  // ];
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-col bg-white">
+    <div className="relative flex h-95 md:h-full min-h-0 w-full flex-col bg-white">
       {/* Mobile Header */}
       <DashboardHeader
         isExpanded={isDetailsExpanded}
@@ -116,13 +171,13 @@ const LiveTrackingDashboard = ({
       >
         <TripMetrics metrics={tripMetricsData} />
         <BookingId booking={bookingIdData} />
-        <BookingStatus statuses={bookingStatuses} />
+        <BookingStatus statuses={statuses} />
         {driver && <DriverDetails driver={driver} />}
         <div
           className={`
-            shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
+            min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
             ${isDetailsExpanded ? "block max-h-85" : "hidden"}
-            md:block md:max-h-85
+            md:block md:max-h-85 overflow-auto
           `}
         >
           <JourneyDetails journey={journeyData} />
