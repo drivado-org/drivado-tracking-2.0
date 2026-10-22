@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import type { DriverData } from "@/types/liveBooking";
 import { Dot, MessageCircle, Phone } from "lucide-react";
 
@@ -44,21 +45,21 @@ const DriverDetails = ({ driver }: DriverDetailsProps) => {
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
             aria-label="Message driver"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
           >
             <MessageCircle className="h-4 w-4" />
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
             aria-label="Call driver"
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
           >
             <Phone className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
 

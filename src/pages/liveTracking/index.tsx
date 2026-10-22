@@ -7,6 +7,7 @@ import { useParams } from "react-router-dom";
 import { useAppSelector } from "@/redux/hooks";
 import { selectEta } from "@/store/route/routeSlice";
 import { toEtaMinutes } from "@/utils/etaFormat";
+import { Button } from "@/components/ui/button";
 
 interface TrackingMapProps {
   isJourneyCompleted?: boolean;
@@ -47,14 +48,14 @@ const LiveTracking = ({
               </p>
             </div>
 
-            <button
+            <Button
               type="button"
               onClick={() => setShowNotification(false)}
               aria-label="Close journey notification"
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2b2b2d] text-emerald-50 transition-colors hover:bg-emerald-400"
             >
               <X className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         )}
       </div>
