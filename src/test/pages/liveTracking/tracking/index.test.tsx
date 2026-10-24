@@ -117,8 +117,11 @@ describe("Tracking page", () => {
       lat: 22.5736,
       lng: 88.3639,
     });
-    expect((globalThis as any).__dbg).toEqual({});
-    // The camera followed the car.
+    // The camera follows the car. React applies renders when act() ends, so give the
+    // camera loop frames after the car's final position has rendered.
+    act(() => {
+      vi.advanceTimersByTime(100);
+    });
     expect(fakeMap.center.lat).toBeCloseTo(22.5736, 6);
     vi.useRealTimers();
   });

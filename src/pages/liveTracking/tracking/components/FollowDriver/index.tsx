@@ -41,7 +41,6 @@ const FollowDriver = ({ position }: FollowDriverProps) => {
     let frame = 0;
     const step = () => {
       const car = positionRef.current;
-      (globalThis as any).__dbg = { car, paused: pausedUntilRef.current, now: Date.now(), hasCenter: !!map.getCenter() };
       const center = map.getCenter();
 
       if (car && Date.now() >= pausedUntilRef.current) {
