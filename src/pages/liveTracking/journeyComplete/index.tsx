@@ -6,7 +6,7 @@ import type {
   JourneyFeedback,
 } from "@/types/liveBooking";
 
-export interface JourneyCompleteProps {
+interface JourneyCompleteProps {
   trip: CompletedTripData;
   onSubmitFeedback: (feedback: JourneyFeedback) => void;
   onSkip: () => void;
