@@ -11,7 +11,7 @@ const DashboardHeader = ({
   handleToggle,
 }: DashboardHeaderProps) => {
   return (
-    <div className="relative z-20 h-0 shrink-0 overflow-visible md:flex md:h-14 md:items-center md:bg-white md:px-5">
+    <div className="relative z-20 h-0 shrink-0 overflow-visible md:flex md:h-14 md:items-center md:bg-white md:px-1">
       {/* Drivado Logo */}
       <div className="absolute -top-9 left-5 flex h-12 w-32 items-center justify-center rounded-t-[18px] rounded-br-[18px] bg-white md:static md:top-auto md:text-left">
         <img
@@ -27,7 +27,7 @@ const DashboardHeader = ({
         onClick={handleToggle}
         aria-label={isExpanded ? "Collapse dashboard" : "Expand dashboard"}
         aria-expanded={isExpanded}
-        className="absolute left-1/2 top-0 -translate-x-1/2 px-6 py-3 md:hidden"
+        className="absolute left-1/2 top-0 -translate-x-1/2 px-6 py-3 md:hidden bg-white"
       >
         <span className="block h-1 w-11 rounded-full bg-slate-300 transition-colors hover:bg-slate-400" />
       </Button>

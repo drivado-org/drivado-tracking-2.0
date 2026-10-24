@@ -1,9 +1,4 @@
-/** null → "--" until the ETA / route API answers. */
-export interface TripMetricsData {
-  duration: number | null;
-  distance: number | null;
-  dropOffTime: string | null;
-}
+import type { TripMetricsData } from "@/types/liveBooking";
 
 interface TripMetricsProps {
   metrics: TripMetricsData;

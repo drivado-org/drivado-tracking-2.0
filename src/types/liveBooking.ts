@@ -5,6 +5,31 @@ export interface DriverData {
   vehicleRegistration: string;
 }
 
+export interface BookingStatusData {
+  label: string;
+  time?: string;
+  completed: boolean;
+  active: boolean;
+}
+export interface TripMetricsData {
+  duration: number | null;
+  distance: number | null;
+  dropOffTime: string | null;
+}
+export interface CompletedTripData {
+  driverName: string;
+  vehicleType: string;
+  bookingId: string;
+  duration: number;
+  distance: number;
+  dropoffLocation: string;
+}
+
+export interface JourneyFeedback {
+  rating: number;
+  note: string;
+}
+
 export type TrackingEventType =
   | "snapshot"
   | "location"

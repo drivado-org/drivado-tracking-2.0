@@ -8,6 +8,7 @@ import { useAppSelector } from "@/redux/hooks";
 import { selectEta } from "@/store/route/routeSlice";
 import { toEtaMinutes } from "@/utils/etaFormat";
 import { Button } from "@/components/ui/button";
+import JourneyComplete from "./journeyComplete";
 
 interface TrackingMapProps {
   isJourneyCompleted?: boolean;
@@ -22,10 +23,22 @@ const LiveTracking = ({
 }: TrackingMapProps) => {
   const [showNotification, setShowNotification] = useState(isJourneyCompleted);
   const [isDashboardExpanded, setIsDashboardExpanded] = useState(false);
+  const [showJourneyComplete, setShowJourneyComplete] = useState(false);
 
   const { tripId } = useParams<{ tripId: string }>();
   const eta = useAppSelector(selectEta);
   const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : timeLeft;
+
+  // Temporary sample data. I will Replace with actual completed trip data.
+  const completedTrip = {
+    duration: eta ? toEtaMinutes(eta.etaSeconds) : 55,
+    distance: eta ? eta.distanceMeters / 1000 : 34.6,
+    dropoffLocation,
+    driverName: "Arjun Singh Mehta",
+    vehicleType: "Luxury Sedan",
+    bookingId: tripId ?? "D0923-L-QRTKVM",
+    bookingLabel: "Booking",
+  };
 
   return (
     <div className="relative flex h-dvh w-full overflow-hidden flex-col md:flex-row bg-slate-100">
@@ -35,7 +48,7 @@ const LiveTracking = ({
           {tripId && <Tracking tripId={tripId} />}
         </div>
         {showNotification && (
-          <div className="absolute left-3 right-3 top-2 z-10 flex items-center gap-3 rounded-2xl bg-[#1d1e23] p-2.5 text-white shadow-md">
+          <div className="absolute left-3 right-3 top-2 z-10 flex items-center gap-3 rounded-2xl bg-[#1d1e23] p-2.5 text-white shadow-md sm:left-auto sm:right-3 sm:w-[50%] md:left-3 md:right-3 md:w-auto lg:left-auto lg:right-3 lg:w-[40%] xl:w-[30%]">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
               <img src={DIcon} />
             </div>
@@ -52,27 +65,38 @@ const LiveTracking = ({
               type="button"
               onClick={() => setShowNotification(false)}
               aria-label="Close journey notification"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2b2b2d] text-emerald-50 transition-colors hover:bg-emerald-400"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2b2b2d] text-emerald-50 transition-colors hover:bg-[#39393a] cursor-pointer"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         )}
+
+        {/* COMPLETED JOURNEY MODAL */}
+        {showJourneyComplete && (
+          <JourneyComplete
+            trip={completedTrip}
+            onSubmitFeedback={(feedback) => {
+              console.log("Feedback:", feedback);
+            }}
+            onSkip={() => setShowJourneyComplete(false)}
+          />
+        )}
       </div>
       {/* TRACKING DASHBOARD */}
       <div
-        className={`
-        absolute bottom-0 left-0 z-20 w-full
-        overflow-visible bg-[#f2eeef]
-        transition-[height] duration-300 ease-in-out
-        ${isDashboardExpanded ? "h-[85%]" : "h-[48%]"}
-        md:relative md:bottom-auto md:left-auto
-        md:order-1 md:h-full md:w-95 md:min-w-95
-        md:shrink-0 md:overflow-hidden
-      `}
+        className={`absolute bottom-0 left-0 z-20 w-full overflow-visible bg-[#f2eeef] transition-[height] duration-300 ease-in-out ${isDashboardExpanded ? "h-[85%]" : "h-[48%]"} md:relative md:bottom-auto md:left-auto md:order-1 md:h-full md:w-95 md:min-w-95 md:shrink-0 md:overflow-hidden`}
       >
         <LiveTrackingDashboard onExpandedChange={setIsDashboardExpanded} />
       </div>
+      {/* TEMPORARY TEST BUTTON */}
+      <button
+        type="button"
+        onClick={() => setShowJourneyComplete(true)}
+        className="absolute bottom-4 right-4 z-60 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-800"
+      >
+        Test Completed Modal
+      </button>
     </div>
   );
 };
