@@ -14,7 +14,7 @@ const JourneyRating = ({ rating, onChange }: JourneyRatingProps) => {
         How was your journey?
       </h2>
 
-      <div className="mt-4 flex justify-center gap-3">
+      <div className="mt-3 flex justify-center gap-3">
         {Array.from({ length: 5 }, (_, index) => {
           const value = index + 1;
           const selected = value <= rating;

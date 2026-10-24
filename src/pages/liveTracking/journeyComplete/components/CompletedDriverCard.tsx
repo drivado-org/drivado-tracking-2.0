@@ -5,14 +5,12 @@ interface CompletedDriverCardProps {
 }
 
 const CompletedDriverCard = ({ trip }: CompletedDriverCardProps) => {
-  const driverName = trip.driverName.trim();
+  const name = trip.driverName.trim();
 
   const initials =
-    driverName.split(/\s+/).length > 1
-      ? (
-          driverName.split(/\s+/)[0][0] + driverName.split(/\s+/).at(-1)![0]
-        ).toUpperCase()
-      : (driverName[0]?.toUpperCase() ?? "");
+    name.split(/\s+/).length > 1
+      ? (name.split(/\s+/)[0][0] + name.split(/\s+/).at(-1)![0]).toUpperCase()
+      : (name[0]?.toUpperCase() ?? "");
 
   return (
     <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-[#f6f4f5] px-3.5 py-3">
@@ -21,7 +19,7 @@ const CompletedDriverCard = ({ trip }: CompletedDriverCardProps) => {
           {initials}
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 text-left">
           <p className="truncate text-sm font-semibold text-gray-900">
             {trip.driverName}
           </p>

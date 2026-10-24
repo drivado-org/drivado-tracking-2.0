@@ -34,7 +34,7 @@ const LiveTracking = ({
     duration: eta ? toEtaMinutes(eta.etaSeconds) : 55,
     distance: eta ? eta.distanceMeters / 1000 : 34.6,
     dropoffLocation,
-    driverName: "Arjun Singh Mehta",
+    driverName: "Manav Singh Yadav",
     vehicleType: "Luxury Sedan",
     bookingId: tripId ?? "D0923-L-QRTKVM",
     bookingLabel: "Booking",
