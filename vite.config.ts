@@ -11,6 +11,7 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: ["tracking-mxfqr.ondigitalocean.app"],
     // The tracking API sends no CORS headers, so in dev the browser calls
     // /realtime/... on localhost and Vite forwards it. Production: set
     // VITE_TRACKING_API_BASE_URL once the backend allows our origin.
