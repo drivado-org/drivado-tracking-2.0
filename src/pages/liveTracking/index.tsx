@@ -36,7 +36,7 @@ const LiveTracking = ({
     dropoffLocation,
     driverName: "Manav Singh Yadav",
     vehicleType: "Luxury Sedan",
-    bookingId: tripId ?? "D0923-L-QRTKVM",
+    bookingId: tripId ?? "",
     bookingLabel: "Booking",
   };
 
@@ -85,7 +85,7 @@ const LiveTracking = ({
       </div>
       {/* TRACKING DASHBOARD */}
       <div
-        className={`absolute bottom-0 left-0 z-20 w-full overflow-visible bg-[#f2eeef] transition-[height] duration-300 ease-in-out ${isDashboardExpanded ? "h-[85%]" : "h-[48%]"} md:relative md:bottom-auto md:left-auto md:order-1 md:h-full md:w-95 md:min-w-95 md:shrink-0 md:overflow-hidden`}
+        className={`absolute bottom-0 left-0 z-20 w-full overflow-visible bg-white transition-[height] duration-300 ease-in-out ${isDashboardExpanded ? "h-[85%]" : "h-[48%]"} md:relative md:bottom-auto md:left-auto md:order-1 md:h-full md:w-95 md:min-w-95 md:shrink-0 md:overflow-hidden`}
       >
         <LiveTrackingDashboard onExpandedChange={setIsDashboardExpanded} />
       </div>
