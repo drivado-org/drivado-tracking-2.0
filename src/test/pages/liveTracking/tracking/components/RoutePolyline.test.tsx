@@ -33,19 +33,19 @@ beforeEach(() => {
 });
 
 describe("RoutePolyline", () => {
-  it("draws the route ahead of the car", () => {
-    render(<RoutePolyline path={PATH} carPosition={{ lat: 22.57, lng: 88.4015 }} />);
+  it("draws the points it is given", () => {
+    render(<RoutePolyline points={PATH} />);
 
     expect(lines).toHaveLength(1);
-    const { path, strokeOpacity } = lines[0].setOptions.mock.lastCall![0];
-    expect(path).toHaveLength(2);
-    expect(path[0].lng).toBeCloseTo(88.4015, 6);
-    expect(strokeOpacity).toBe(0.85);
+    expect(lines[0].setOptions.mock.lastCall![0]).toMatchObject({
+      path: PATH,
+      strokeOpacity: 0.85,
+    });
   });
 
   it("dims the route while rerouting and reuses the same line", () => {
-    const { rerender } = render(<RoutePolyline path={PATH} carPosition={null} />);
-    rerender(<RoutePolyline path={PATH} carPosition={null} rerouting />);
+    const { rerender } = render(<RoutePolyline points={PATH} />);
+    rerender(<RoutePolyline points={PATH} rerouting />);
 
     expect(lines).toHaveLength(1);
     expect(lines[0].setOptions.mock.lastCall![0]).toMatchObject({
@@ -54,8 +54,8 @@ describe("RoutePolyline", () => {
     });
   });
 
-  it("draws nothing without a route and removes the line on unmount", () => {
-    const { unmount } = render(<RoutePolyline path={null} carPosition={null} />);
+  it("draws nothing below 2 points and removes the line on unmount", () => {
+    const { unmount } = render(<RoutePolyline points={[PATH[0]]} />);
     expect(lines[0].setOptions.mock.lastCall![0].path).toEqual([]);
 
     unmount();

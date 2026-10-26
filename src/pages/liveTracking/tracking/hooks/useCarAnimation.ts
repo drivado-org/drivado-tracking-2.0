@@ -16,8 +16,12 @@ type FilterState = {
 
 const EMPTY_FILTER: FilterState = { track: EMPTY_TRACK, accepted: [] };
 
-const acceptPoint = (state: FilterState, point: TrackPoint): FilterState => {
-  const track = applyPoint(state.track, point);
+const acceptPoint = (
+  state: FilterState,
+  point: TrackPoint,
+  routePath: LatLng[] | null,
+): FilterState => {
+  const track = applyPoint(state.track, point, routePath);
   if (track.current === state.track.current) return { ...state, track };
   return {
     track,
@@ -28,6 +32,7 @@ const acceptPoint = (state: FilterState, point: TrackPoint): FilterState => {
 const useCarAnimation = (
   points: readonly TrackPoint[],
   bearing: number | null = null,
+  routePath: LatLng[] | null = null,
 ) => {
   const [filter, setFilter] = useState<FilterState>(EMPTY_FILTER);
   const [seenUntil, setSeenUntil] = useState<string | null>(null);
@@ -44,7 +49,12 @@ const useCarAnimation = (
       const fresh = points.filter(
         (point) => Date.parse(point.timestamp) > seenMs,
       );
-      setFilter((prev) => fresh.reduce(acceptPoint, prev));
+      setFilter((prev) =>
+        fresh.reduce(
+          (state, point) => acceptPoint(state, point, routePath),
+          prev,
+        ),
+      );
     }
   }
 

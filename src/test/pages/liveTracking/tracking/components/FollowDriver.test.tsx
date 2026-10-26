@@ -13,6 +13,7 @@ const createFakeMap = (center: { lat: number; lng: number }) => {
     moveCamera: vi.fn((options: { center: { lat: number; lng: number } }) => {
       map.center = { ...options.center };
     }),
+    setZoom: vi.fn(),
     removeListener: vi.fn(),
     addListener: vi.fn((event: string, handler: () => void) => {
       listeners[event] = handler;
@@ -117,5 +118,28 @@ describe("FollowDriver", () => {
   it("renders nothing", () => {
     const { container } = render(<FollowDriver position={CAR} />);
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("leaves the camera alone while disabled (overview)", () => {
+    render(<FollowDriver position={CAR} enabled={false} />);
+    run(500);
+    expect(mapInstance!.moveCamera).not.toHaveBeenCalled();
+    expect(mapInstance!.setZoom).not.toHaveBeenCalled();
+  });
+
+  it("zooms in and follows right away when enabled again, even after a drag", () => {
+    const { rerender } = render(<FollowDriver position={CAR} enabled={false} />);
+    mapInstance!.fire("dragstart");
+    rerender(<FollowDriver position={CAR} enabled />);
+
+    expect(mapInstance!.setZoom).toHaveBeenCalledWith(17);
+    run(2000);
+    expect(mapInstance!.center.lat).toBeCloseTo(CAR.lat, 6);
+  });
+
+  it("does not change the zoom on first render", () => {
+    render(<FollowDriver position={CAR} />);
+    run(100);
+    expect(mapInstance!.setZoom).not.toHaveBeenCalled();
   });
 });

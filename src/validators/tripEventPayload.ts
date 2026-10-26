@@ -5,12 +5,13 @@ import type {
   TripEventBase,
   TripVehicleMeta,
 } from "@/types/route";
-import type { DriverStatus, TripType } from "@/types/tracking";
+import type { TripType } from "@/types/tracking";
 import { isValidLatitude, isValidLongitude } from "./latLng";
 import { isPlainObject } from "./primitives";
-import { toPayloadObject } from "./trackingPayload";
+import { readTripStatus, toPayloadObject } from "./trackingPayload";
 
 // Checks each event exactly like the backend's `validate` tags; any failed rule rejects the event.
+// The status is read from bookingStatus, else driverStatus (see readTripStatus).
 //   event: eta          ETAUpdate       { driverID, bookingID, tripID, tripType, driverStatus?, eta, distance }
 //   event: route_change RouteChange     { driverID, bookingID, tripID, tripType, driverStatus, routePath }
 //   event: vehicle_meta TripVehicleMeta { driverID, bookingID, tripID, tripType, driverStatus, reroute, bearing? }
@@ -18,14 +19,6 @@ import { toPayloadObject } from "./trackingPayload";
 //   RoutePoint          { lat, lng }
 
 const TRIP_TYPES: readonly TripType[] = ["TRIP_S", "TRIP_D"];
-
-const EVENT_DRIVER_STATUSES: readonly DriverStatus[] = [
-  "ENROUTE",
-  "ARRIVED",
-  "POB",
-  "COMPLETED",
-  "NOSHOW",
-];
 
 const isRequiredString = (value: unknown): value is string =>
   typeof value === "string" && value.trim() !== "";
@@ -68,9 +61,9 @@ export const parseEtaEvent = (raw: unknown, now = Date.now()): EtaUpdate | null 
   if (!base) return null;
 
   // omitempty: missing or "" is fine, anything else must be a known status.
-  const { driverStatus, eta, distance } = payload;
-  const hasStatus = driverStatus !== undefined && driverStatus !== null && driverStatus !== "";
-  if (hasStatus && !oneOf(EVENT_DRIVER_STATUSES, driverStatus)) return null;
+  const { eta, distance } = payload;
+  const driverStatus = readTripStatus(payload);
+  if (driverStatus === null) return null;
 
   // eta is an int64 of seconds.
   if (!isNonNegativeNumber(eta) || !Number.isInteger(eta)) return null;
@@ -78,7 +71,7 @@ export const parseEtaEvent = (raw: unknown, now = Date.now()): EtaUpdate | null 
 
   return {
     ...base,
-    driverStatus: hasStatus ? (driverStatus as DriverStatus) : null,
+    driverStatus: driverStatus ?? null,
     etaSeconds: eta,
     distanceMeters: distance,
     arrivalTime: new Date(now + eta * 1000).toISOString(),
@@ -98,8 +91,9 @@ export const parseRouteChange = (raw: unknown): RouteChange | null => {
   if (!payload) return null;
 
   const base = parseBase(payload);
-  const { driverStatus, routePath } = payload;
-  if (!base || !oneOf(EVENT_DRIVER_STATUSES, driverStatus)) return null;
+  const { routePath } = payload;
+  const driverStatus = readTripStatus(payload);
+  if (!base || !driverStatus) return null;
 
   // min=2, dive: one bad point rejects the route.
   if (!Array.isArray(routePath) || routePath.length < 2) return null;
@@ -115,8 +109,9 @@ export const parseVehicleMeta = (raw: unknown): TripVehicleMeta | null => {
   if (!payload) return null;
 
   const base = parseBase(payload);
-  const { driverStatus, reroute, bearing } = payload;
-  if (!base || !oneOf(EVENT_DRIVER_STATUSES, driverStatus)) return null;
+  const { reroute, bearing } = payload;
+  const driverStatus = readTripStatus(payload);
+  if (!base || !driverStatus) return null;
   if (typeof reroute !== "boolean") return null;
 
   // Optional; when sent: gte=0, lt=360.

@@ -8,7 +8,7 @@ vi.mock("@vis.gl/react-google-maps", () => ({
       {props.children}
     </div>
   ),
-  AdvancedMarkerAnchorPoint: { CENTER: ["-50%", "-50%"] },
+  AdvancedMarkerAnchorPoint: { CENTER: ["-50%", "-50%"], BOTTOM_CENTER: ["-50%", "-100%"] },
 }));
 
 describe("CarMarker", () => {
@@ -30,5 +30,16 @@ describe("CarMarker", () => {
     render(<CarMarker position={{ lat: 22.5726, lng: 88.3639 }} />);
     const img = screen.getByTestId("car-marker").querySelector("img");
     expect(img?.getAttribute("src")).toMatch(/vehicle.*\.svg/);
+  });
+
+  it("shows the label above the car, not rotated with it", () => {
+    render(<CarMarker position={{ lat: 22.5726, lng: 88.3639 }} heading={90} label="14 min" />);
+    const label = screen.getByText("14 min");
+    expect(label.closest("[style]")).toBeNull();
+  });
+
+  it("shows no label without one", () => {
+    render(<CarMarker position={{ lat: 22.5726, lng: 88.3639 }} />);
+    expect(screen.getByTestId("car-marker").textContent).toBe("");
   });
 });

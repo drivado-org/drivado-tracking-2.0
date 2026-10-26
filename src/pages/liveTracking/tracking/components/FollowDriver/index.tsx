@@ -5,31 +5,35 @@ import {
   CAMERA_EASE_PER_FRAME,
   CAMERA_JUMP_METERS,
   FOLLOW_PAUSE_AFTER_DRAG_MS,
+  FOLLOW_ZOOM,
 } from "../../constants/tracking";
 import { distanceMeters } from "../../utils/locationFilter";
-
-/** Closer than this, the camera is on the car: no more camera moves until it drives on. */
 const SETTLED_METERS = 0.05;
 
 type FollowDriverProps = {
-  /** Where the car is drawn this frame. */
   position: LatLng | null;
+  /** false while the overview shows the whole trip: the camera is left alone. */
+  enabled?: boolean;
 };
 
-/**
- * Keeps the car in the middle of the map. Renders nothing.
- * Glides the camera a share of the way to the car every frame, so the map scrolls as smoothly
- * as the car moves (panTo per GPS point would jerk the view ahead of the car).
- * A drag by the user pauses following for FOLLOW_PAUSE_AFTER_DRAG_MS; then it glides back.
- */
-const FollowDriver = ({ position }: FollowDriverProps) => {
+const FollowDriver = ({ position, enabled = true }: FollowDriverProps) => {
   const map = useMap();
   const positionRef = useRef(position);
   const pausedUntilRef = useRef(0);
+  const enabledRef = useRef(enabled);
 
   useEffect(() => {
     positionRef.current = position;
   }, [position]);
+
+  useEffect(() => {
+    // Back from the overview: zoom in and follow the car right away, even after a drag.
+    if (enabled && !enabledRef.current && map) {
+      pausedUntilRef.current = 0;
+      map.setZoom(FOLLOW_ZOOM);
+    }
+    enabledRef.current = enabled;
+  }, [enabled, map]);
 
   useEffect(() => {
     if (!map) return;
@@ -43,7 +47,7 @@ const FollowDriver = ({ position }: FollowDriverProps) => {
       const car = positionRef.current;
       const center = map.getCenter();
 
-      if (car && Date.now() >= pausedUntilRef.current) {
+      if (car && enabledRef.current && Date.now() >= pausedUntilRef.current) {
         const camera = center ? { lat: center.lat(), lng: center.lng() } : null;
         const gap = camera ? distanceMeters(camera, car) : Infinity;
 

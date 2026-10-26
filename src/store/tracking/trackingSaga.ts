@@ -11,6 +11,7 @@ import { createSseParser } from "@/server/sse/sseParser";
 import { trackingAction } from "@/server/sse/tracking-action";
 import { TRACKING_EVENTS } from "@/server/sse/trackingEvents";
 import type { DriverStatus, TrackingActionPayload } from "@/types/tracking";
+import { isTripFinished } from "@/utils/tripStatus";
 import type { TripEventBase } from "@/types/route";
 import {
   parseLocationUpdate,
@@ -74,9 +75,6 @@ const createStreamChannel = (
       reader.cancel().catch(() => {});
     };
   }, buffers.expanding<StreamEvent>());
-
-const isTripFinished = (status: DriverStatus | null) =>
-  status === "COMPLETED" || status === "NOSHOW";
 
 /** Parses an eta / route_change / vehicle_meta event; null for another trip or a bad payload. */
 const readTripEvent = <T extends TripEventBase>(

@@ -20,6 +20,16 @@ describe("matchToRoute", () => {
     expect(match.distanceMeters).toBeCloseTo(11, 0);
   });
 
+  it("measures how far along the route the car is, from the route's start", () => {
+    expect(matchToRoute(PATH, { lat: 22.5701, lng: 88.4015 })!.alongMeters).toBeCloseTo(154, 0);
+    // Searching from a later segment still counts from the start.
+    expect(matchToRoute(PATH, { lat: 22.57, lng: 88.4025 }, 2)!.alongMeters).toBeCloseTo(257, 0);
+  });
+
+  it("matches the last segment when the car is past the route's end", () => {
+    expect(matchToRoute(PATH, { lat: 22.57, lng: 88.404 })!.segmentIndex).toBe(2);
+  });
+
   it("returns null for a route under 2 points", () => {
     expect(matchToRoute([PATH[0]], PATH[0])).toBeNull();
   });
@@ -43,8 +53,16 @@ describe("remainingRoute", () => {
     expect(points.slice(1)).toEqual(PATH.slice(2));
   });
 
+  it("moves the car onto the route when it is near it", () => {
+    // ~11 m north of the route: GPS noise beside the road.
+    const { points, snapped } = remainingRoute(PATH, { lat: 22.5701, lng: 88.4015 });
+    expect(snapped).toBe(points[0]);
+    expect(snapped!.lat).toBeCloseTo(22.57, 6);
+    expect(snapped!.lng).toBeCloseTo(88.4015, 6);
+  });
+
   it("returns the whole route before the first car position", () => {
-    expect(remainingRoute(PATH, null)).toEqual({ points: PATH, segmentIndex: 0 });
+    expect(remainingRoute(PATH, null)).toEqual({ points: PATH, segmentIndex: 0, snapped: null });
   });
 
   it("returns the route from fromIndex when the car is off it", () => {
@@ -52,10 +70,12 @@ describe("remainingRoute", () => {
     expect(remainingRoute(PATH, { lat: 22.571, lng: 88.4015 })).toEqual({
       points: PATH,
       segmentIndex: 0,
+      snapped: null,
     });
     expect(remainingRoute(PATH, { lat: 22.571, lng: 88.4015 }, 2)).toEqual({
       points: PATH.slice(2),
       segmentIndex: 2,
+      snapped: null,
     });
   });
 
@@ -68,6 +88,10 @@ describe("remainingRoute", () => {
   });
 
   it("keeps the last segment when fromIndex is past the end", () => {
-    expect(remainingRoute(PATH, null, 99)).toEqual({ points: PATH.slice(2), segmentIndex: 2 });
+    expect(remainingRoute(PATH, null, 99)).toEqual({
+      points: PATH.slice(2),
+      segmentIndex: 2,
+      snapped: null,
+    });
   });
 });

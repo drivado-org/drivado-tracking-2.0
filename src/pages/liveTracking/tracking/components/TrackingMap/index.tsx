@@ -44,7 +44,7 @@ const TrackingMap = ({
         defaultCenter={center}
         defaultZoom={zoom}
         gestureHandling="greedy"
-        disableDefaultUI={false}
+        disableDefaultUI
       >
         {children}
       </Map>
