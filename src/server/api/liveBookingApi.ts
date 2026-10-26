@@ -1,5 +1,13 @@
 import type { DriverData } from "@/types/liveBooking";
 
+import axios from "axios";
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+});
+
+export default api;
+
 export const getDriverDetailsApi = async (): Promise<DriverData> => {
   // Mock API delay
   await new Promise((resolve) => setTimeout(resolve, 800));

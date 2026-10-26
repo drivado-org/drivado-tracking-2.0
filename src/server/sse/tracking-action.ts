@@ -8,8 +8,12 @@ export const trackingAction = async (
 ) => {
   // const baseUrl = env.trackingApiBaseUrl ?? "";
 
-  const response = await axios.get<ReadableStream<Uint8Array>>(
-    `https://testapi.drivado.com/realtime/realtime/trips/${encodeURIComponent(payload.tripID)}/stream`,
+  const trackingApi = axios.create({
+    baseURL: import.meta.env.VITE_TRACKING_API_BASE_URL,
+  });
+
+  const response = await trackingApi.get<ReadableStream<Uint8Array>>(
+    `/realtime/realtime/trips/${encodeURIComponent(payload.tripID)}/stream`,
     {
       headers: { Accept: "text/event-stream" },
       adapter: "fetch",
