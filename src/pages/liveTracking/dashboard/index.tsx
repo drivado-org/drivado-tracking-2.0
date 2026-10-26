@@ -1,8 +1,6 @@
-import BookingStatus, {
-  type BookingStatusData,
-} from "./components/BookingStatus";
+import BookingStatus from "./components/BookingStatus";
 import DriverDetails from "./components/DriverDetails";
-import TripMetrics, { type TripMetricsData } from "./components/TripMetrics";
+import TripMetrics from "./components/TripMetrics";
 import JourneyDetails, { type JourneyData } from "./components/JourneyDetails";
 import BookingDetails, { type BookingData } from "./components/BookingDetails";
 import BookingId, { type BookingIdData } from "./components/BookingId";
@@ -13,6 +11,7 @@ import type { RootState } from "@/store";
 import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
 import { selectEta } from "@/store/route/routeSlice";
 import { formatClockTime, toEtaMinutes, toKilometres } from "@/utils/etaFormat";
+import type { BookingStatusData, TripMetricsData } from "@/types/liveBooking";
 
 type DriverStatus = "ENROUTE" | "ARRIVED" | "POB" | "COMPLETED" | "NOSHOW";
 

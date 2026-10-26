@@ -8,23 +8,25 @@ interface DriverDetailsProps {
 
 const DriverDetails = ({ driver }: DriverDetailsProps) => {
   const { driverName, rating, trips, vehicleRegistration } = driver;
+
+  // Calculate driver initials
+  const name = driverName.trim();
+
+  const initials =
+    name.split(/\s+/).length > 1
+      ? (name.split(/\s+/)[0][0] + name.split(/\s+/).at(-1)![0]).toUpperCase()
+      : (name[0]?.toUpperCase() ?? "");
+
   return (
     <section className="rounded-2xl bg-[#f7f4f5] px-3 py-3 mx-4 mb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900">
             {/* <span className="text-sm font-semibold text-white">AM</span> */}
-            <span className="text-sm font-semibold text-white">
-              {driverName.trim().split(/\s+/).length > 1
-                ? (
-                    driverName.trim().split(/\s+/)[0][0] +
-                    driverName.trim().split(/\s+/).at(-1)![0]
-                  ).toUpperCase()
-                : driverName.trim()[0]?.toUpperCase()}
-            </span>
+            <span className="text-sm font-semibold text-white">{initials}</span>
           </div>
           <div className="text-left">
-            <p className="text-sm font-semibold leading-5 text-slate-800">
+            <p className="truncate w-40 text-sm font-semibold leading-5 text-slate-800">
               {driverName}
             </p>
 
