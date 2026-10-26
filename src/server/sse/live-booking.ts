@@ -5,7 +5,12 @@ export const createLiveTrackingConnection = (
   onEvent: (event: TrackingEvent) => void,
   onError?: () => void,
 ): (() => void) => {
-  const url = `https://testapi.drivado.com/realtime/realtime/trips/${encodeURIComponent(tripID)}/stream`;
+  const baseUrl = (import.meta.env.VITE_TRACKING_API_BASE_URL ?? "").replace(
+    /\/+$/,
+    "",
+  );
+
+  const url = `${baseUrl}/realtime/realtime/trips/${encodeURIComponent(tripID)}/stream`;
 
   const eventSource = new EventSource(url);
 
