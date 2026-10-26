@@ -1,8 +1,33 @@
 import type { TripMetricsData } from "@/types/liveBooking";
+import { splitHours } from "@/utils/etaFormat";
 
 interface TripMetricsProps {
   metrics: TripMetricsData;
 }
+
+const Value = ({ value, unit }: { value: number | string; unit: string }) => (
+  <>
+    <span className="text-[22px] font-semibold leading-none text-slate-900">
+      {value}
+    </span>
+
+    <span className="text-xs font-medium text-slate-500">{unit}</span>
+  </>
+);
+
+const Duration = ({ minutes }: { minutes: number | null }) => {
+  if (minutes === null) return <Value value="--" unit="min" />;
+
+  const split = splitHours(minutes);
+  if (split.hours === 0) return <Value value={split.minutes} unit="min" />;
+
+  return (
+    <>
+      <Value value={split.hours} unit="hr" />
+      {split.minutes > 0 && <Value value={split.minutes} unit="min" />}
+    </>
+  );
+};
 
 const TripMetrics = ({ metrics }: TripMetricsProps) => {
   const { duration, distance, dropOffTime } = metrics;
@@ -14,11 +39,7 @@ const TripMetrics = ({ metrics }: TripMetricsProps) => {
           <p className="text-xs font-medium text-slate-500">Duration</p>
 
           <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-[22px] font-semibold leading-none text-slate-900">
-              {duration ?? "--"}
-            </span>
-
-            <span className="text-xs font-medium text-slate-500">min</span>
+            <Duration minutes={duration} />
           </div>
         </div>
 

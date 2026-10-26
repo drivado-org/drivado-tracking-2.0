@@ -42,6 +42,19 @@ describe("parseEtaEvent (ETAUpdate)", () => {
     expect(parseEtaEvent({ ...valid, driverStatus }, NOW)?.driverStatus).toBeNull();
   });
 
+  it("reads bookingStatus before driverStatus, in any case", () => {
+    expect(
+      parseEtaEvent({ ...valid, bookingStatus: "pob", driverStatus: "ENROUTE" }, NOW)?.driverStatus,
+    ).toBe("POB");
+    expect(parseEtaEvent({ ...valid, bookingStatus: "" }, NOW)?.driverStatus).toBe("ENROUTE");
+  });
+
+  it("reads ARRIVE as ARRIVED", () => {
+    expect(parseEtaEvent({ ...valid, bookingStatus: "ARRIVE" }, NOW)?.driverStatus).toBe(
+      "ARRIVED",
+    );
+  });
+
   it("accepts eta 0 and distance 0 (arrived)", () => {
     expect(parseEtaEvent({ ...valid, eta: 0, distance: 0 }, NOW)).toMatchObject({
       etaSeconds: 0,
@@ -51,7 +64,8 @@ describe("parseEtaEvent (ETAUpdate)", () => {
 
   it.each<Case>([
     ...BAD_BASES,
-    ["unknown driverStatus", { ...BASE, driverStatus: "ARRIVE", eta: 1, distance: 1 }],
+    ["unknown driverStatus", { ...BASE, driverStatus: "FLYING", eta: 1, distance: 1 }],
+    ["unknown bookingStatus", { ...BASE, bookingStatus: "FLYING", eta: 1, distance: 1 }],
     ["no eta", { ...BASE, distance: 1 }],
     ["negative eta", { ...BASE, eta: -1, distance: 1 }],
     ["fractional eta", { ...BASE, eta: 1.5, distance: 1 }],

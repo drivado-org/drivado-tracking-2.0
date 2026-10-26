@@ -5,6 +5,7 @@ import {
 } from "@reduxjs/toolkit";
 import { MAX_TRACK_POINTS } from "@/pages/liveTracking/tracking/constants/tracking";
 import type { TrackPoint } from "@/types/geo";
+import { isStepBack } from "@/utils/tripStatus";
 import type {
   DriverStatus,
   LocationUpdate,
@@ -43,6 +44,13 @@ const pushPoint = (state: TrackingState, point: TrackPoint): boolean => {
   return true;
 };
 
+/** Keeps the newest status; a late event can't move the trip back a step. */
+const setStatus = (state: TrackingState, status: DriverStatus) => {
+  if (isStepBack(status, state.driverStatus)) return;
+  state.driverStatus = status;
+  if (state.data) state.data.driverStatus = status;
+};
+
 const markLive = (state: TrackingState) => {
   state.loading = false;
   state.connected = true;
@@ -68,8 +76,8 @@ const trackingSlice = createSlice({
     trackingUpdate: (state, action: PayloadAction<TrackingPayload>) => {
       const { lat, lng, timestamp, driverStatus } = action.payload;
       if (pushPoint(state, { lat, lng, timestamp })) {
-        state.data = action.payload;
-        if (driverStatus) state.driverStatus = driverStatus;
+        state.data = { ...action.payload, driverStatus: state.driverStatus };
+        if (driverStatus) setStatus(state, driverStatus);
       }
       markLive(state);
     },
@@ -86,8 +94,7 @@ const trackingSlice = createSlice({
 
     /** Status from eta / route_change / vehicle_meta. */
     trackingStatusUpdate: (state, action: PayloadAction<DriverStatus>) => {
-      state.driverStatus = action.payload;
-      if (state.data) state.data.driverStatus = action.payload;
+      setStatus(state, action.payload);
     },
 
     trackingDisconnected: (state) => {
@@ -123,6 +130,9 @@ type TrackingRootState = { tracking: TrackingState };
 
 /** Recent car points, newest last. Same array until a point is added. */
 export const selectTrackPoints = (state: TrackingRootState) => state.tracking.points;
+
+/** Trip status (ENROUTE → ARRIVED → POB → COMPLETED), from every event; null until one says. */
+export const selectDriverStatus = (state: TrackingRootState) => state.tracking.driverStatus;
 
 /** Newest car point, or null before the first one. */
 export const selectDriverPoint = (state: TrackingRootState) =>

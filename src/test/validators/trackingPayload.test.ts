@@ -283,8 +283,12 @@ describe("parseLocationUpdate", () => {
 });
 
 describe("parseDriverStatus", () => {
-  it.each(["ENROUTE", "ARRIVE", "POB", "COMPLETED", "NOSHOW"])("accepts %s", (status) => {
+  it.each(["ENROUTE", "ARRIVED", "POB", "COMPLETED", "NOSHOW"])("accepts %s", (status) => {
     expect(parseDriverStatus(status)).toBe(status);
+  });
+
+  it("reads ARRIVE as ARRIVED", () => {
+    expect(parseDriverStatus(" arrive ")).toBe("ARRIVED");
   });
 
   it("normalises case and spaces", () => {

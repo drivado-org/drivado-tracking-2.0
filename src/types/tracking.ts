@@ -4,7 +4,6 @@ export type TripType = "TRIP_S" | "TRIP_D";
 
 export type DriverStatus =
   | "ENROUTE"
-  | "ARRIVE"
   | "ARRIVED"
   | "POB"
   | "COMPLETED"

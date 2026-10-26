@@ -6,9 +6,31 @@ import { X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useAppSelector } from "@/redux/hooks";
 import { selectEta } from "@/store/route/routeSlice";
+import { selectDriverStatus } from "@/store/tracking/trackingSlice";
+import type { DriverStatus } from "@/types/tracking";
 import { toEtaMinutes } from "@/utils/etaFormat";
 import { Button } from "@/components/ui/button";
 import JourneyComplete from "./journeyComplete";
+
+/** Banner text for each trip step; the drop-off is only named once the passenger is on board. */
+const bannerText = (
+  status: DriverStatus | null,
+  dropoffLocation: string,
+  timeLeft: string,
+): { title: string; detail: string } => {
+  switch (status) {
+    case "ENROUTE":
+      return { title: "Driver on the way", detail: `Pickup - ${timeLeft} away` };
+    case "ARRIVED":
+      return { title: "Your driver has arrived", detail: "Waiting at the pickup" };
+    case "COMPLETED":
+      return { title: "You've arrived", detail: dropoffLocation };
+    case "NOSHOW":
+      return { title: "Trip ended", detail: "Passenger no-show" };
+    default:
+      return { title: "Almost there!", detail: `${dropoffLocation} - ${timeLeft} away` };
+  }
+};
 
 interface TrackingMapProps {
   isJourneyCompleted?: boolean;
@@ -28,6 +50,8 @@ const LiveTracking = ({
   const { tripId } = useParams<{ tripId: string }>();
   const eta = useAppSelector(selectEta);
   const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : timeLeft;
+  const status = useAppSelector(selectDriverStatus);
+  const banner = bannerText(status, dropoffLocation, etaTimeLeft);
 
   // Temporary sample data. I will Replace with actual completed trip data.
   const completedTrip = {
@@ -45,7 +69,10 @@ const LiveTracking = ({
       {/* TRACKING MAP */}
       <div className="relative order-1 h-[52%] min-h-0 w-full shrink-0 overflow-hidden md:order-2 md:h-full md:w-0 md:flex-1">
         <div className="absolute inset-0">
-          {tripId && <Tracking tripId={tripId} />}
+          {tripId && (
+            // The notice covers ~68 px at the top of the map.
+            <Tracking tripId={tripId} topInset={showNotification ? 68 : 0} />
+          )}
         </div>
         {showNotification && (
           <div className="absolute left-3 right-3 top-2 z-10 flex items-center gap-3 rounded-2xl bg-[#1d1e23] p-2.5 text-white shadow-md sm:left-auto sm:right-3 sm:w-[50%] md:left-3 md:right-3 md:w-auto lg:left-auto lg:right-3 lg:w-[40%] xl:w-[30%]">
@@ -54,10 +81,10 @@ const LiveTracking = ({
             </div>
 
             <div className="min-w-0 flex-1 text-left">
-              <p className="text-sm font-bold leading-5">Almost there!</p>
+              <p className="text-sm font-bold leading-5">{banner.title}</p>
 
               <p className="truncate text-xs font-medium text-[#a2a3a7]">
-                {dropoffLocation} - {etaTimeLeft} away
+                {banner.detail}
               </p>
             </div>
 
@@ -93,7 +120,7 @@ const LiveTracking = ({
       <button
         type="button"
         onClick={() => setShowJourneyComplete(true)}
-        className="absolute bottom-4 right-4 z-60 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-800"
+        className="absolute bottom-4 right-20 z-60 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-800"
       >
         Test Completed Modal
       </button>
