@@ -9,11 +9,9 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
+ENV VITE_APP_ENV="production"
+
 # Build Vite application
 RUN bun run build
 
-ENV VITE_APP_ENV="production"
 
-EXPOSE 5173
-
-CMD ["bun", "start"]
