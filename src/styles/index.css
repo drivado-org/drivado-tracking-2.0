@@ -22,7 +22,8 @@
   --heading: system-ui, "Segoe UI", Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
+  font-size: 16px;
+  /* font: 18px/145% var(--sans); */
   letter-spacing: 0.18px;
   color-scheme: light dark;
   color: var(--text);
@@ -32,9 +33,12 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  @media (max-width: 1024px) {
+  /* @media (min-width: 1025px) {
     font-size: 16px;
   }
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  } */
 
   --background: oklch(1 0 0);
 
@@ -132,31 +136,6 @@ body {
   /* min-width: 320px; */
 }
 
-/* h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-} */
-
-/* h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-} */
-/* h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-} */
 p {
   margin: 0;
 }
@@ -252,6 +231,10 @@ code {
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 }
+
+/* @theme {
+  --breakpoint-2md: 980px;
+} */
 
 @layer base {
   * {

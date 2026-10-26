@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { CarFront, Share2 } from "lucide-react";
 
 export interface BookingIdData {
@@ -28,14 +29,14 @@ const BookingId = ({ booking, onShare }: BookingIdProps) => {
         </div>
       </div>
 
-      <button
+      <Button
         type="button"
         aria-label="View live tracking"
         onClick={onShare}
-        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-[#f7f4f5] text-[#111318]"
+        className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-[#f7f4f5] hover:bg-[#ebe5e7] text-[#111318]"
       >
         <Share2 className="size-4.25" />
-      </button>
+      </Button>
     </div>
   );
 };

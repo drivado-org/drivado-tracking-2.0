@@ -6,7 +6,7 @@ export const getDriverDetailsApi = async (): Promise<DriverData> => {
 
   // Mock Data
   return {
-    name: "Arjun Mehra",
+    driverName: "Manav Singh Yadav",
     rating: 4.97,
     trips: 1284,
     vehicleRegistration: "LX24 RVD",

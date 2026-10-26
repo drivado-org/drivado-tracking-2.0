@@ -83,4 +83,22 @@ describe("createSseParser", () => {
     parser.push("data\ndata: x\n\n");
     expect(messages).toEqual(["\nx"]);
   });
+
+  it("passes the event name, defaulting to message", () => {
+    const events: [string, string][] = [];
+    const parser = createSseParser((data, event) => events.push([event, data]));
+    parser.push("event: eta\ndata: {}\n\ndata: plain\n\nevent: route_change\ndata: []\n\n");
+    expect(events).toEqual([
+      ["eta", "{}"],
+      ["message", "plain"],
+      ["route_change", "[]"],
+    ]);
+  });
+
+  it("drops an event name that has no data", () => {
+    const events: string[] = [];
+    const parser = createSseParser((_data, event) => events.push(event));
+    parser.push("event: eta\n\ndata: x\n\n");
+    expect(events).toEqual(["message"]);
+  });
 });

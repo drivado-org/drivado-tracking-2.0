@@ -13,6 +13,8 @@ function* getDriverDetailsSaga() {
   try {
     const response: DriverData = yield call(getDriverDetailsApi);
 
+    console.log("Saga response:", response);
+
     yield put(getDriverDetailsSuccess(response));
   } catch (error) {
     yield put(

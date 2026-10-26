@@ -1,8 +1,11 @@
+import type { TrackPoint } from "./geo";
+
 export type TripType = "TRIP_S" | "TRIP_D";
 
 export type DriverStatus =
   | "ENROUTE"
   | "ARRIVE"
+  | "ARRIVED"
   | "POB"
   | "COMPLETED"
   | "NOSHOW";
@@ -35,7 +38,12 @@ export interface TrackingActionPayload {
 }
 
 export interface TrackingState {
+  /** Latest snapshot with the trip ids; null until a snapshot arrives. */
   data: TrackingPayload | null;
+  /** Recent car positions, oldest first, newest last. Capped at MAX_TRACK_POINTS. */
+  points: TrackPoint[];
+  /** Latest known status, from the snapshot or eta / route_change / vehicle_meta. */
+  driverStatus: DriverStatus | null;
   loading: boolean;
   connected: boolean;
   error: string | null;
