@@ -65,13 +65,22 @@ export const JOURNEY_MAX_ZOOM = 16;
 
 export const ROUTE_MAX_ZOOM = 17;
 
-/** Room kept clear around the framed points: the ETA label above the car and the buttons on the right. */
-export const JOURNEY_PADDING_PX = { top: 58, right: 78, bottom: 46, left: 56 };
+/**
+ * Room kept clear around the framed points (the ETA label above the car, the buttons).
+ * Even on opposite sides, so what is framed sits in the middle of the map.
+ */
+export const JOURNEY_PADDING_PX = { top: 64, right: 72, bottom: 64, left: 72 };
 
-export const ROUTE_PADDING_PX = { top: 48, right: 70, bottom: 46, left: 70 };
+export const ROUTE_PADDING_PX = { top: 56, right: 64, bottom: 56, left: 64 };
+
+/** On a small map no side's padding takes more than this share of the map's width / height. */
+export const MAX_PADDING_SHARE = 0.18;
 
 /** In the whole-route view, this close to the drop-off (along the route) the camera locks on the car. */
 export const AUTO_FOLLOW_METERS = 900;
+
+/** How long the glide onto the whole route takes. */
+export const ROUTE_FLY_MS = 700;
 
 /** How long the automatic move onto the car takes. */
 export const AUTO_FOLLOW_MS = 2400;
@@ -92,3 +101,17 @@ export const ARRIVED_METERS = 30;
 
 /** ARRIVED / COMPLETED show after this long even if the drawn car isn't at the end of the route. */
 export const ARRIVAL_MAX_WAIT_MS = 6000;
+
+// ---- Geofence (see hooks/useGeofence.ts) ----
+
+/** Radius of the area drawn around the pickup / drop-off. */
+export const GEOFENCE_RADIUS_METERS = 100;
+
+/** The car leaves the area only this far past its edge: GPS drift at the edge doesn't flicker it. */
+export const GEOFENCE_EXIT_MARGIN_METERS = 15;
+
+/** The area is drawn, and the camera zooms in further, only once the car is this close. */
+export const GEOFENCE_SHOW_METERS = 300;
+
+/** Near the pickup / drop-off the journey view may zoom in this far, and the lock zooms in to it. */
+export const APPROACH_ZOOM = 18;

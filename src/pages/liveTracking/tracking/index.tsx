@@ -50,7 +50,7 @@ const Tracking = ({ tripId, topInset = 0 }: TrackingProps) => {
   };
 
   return (
-    <div className="relative h-svh w-full">
+    <div className="relative h-full w-full">
       <TrackingMap apiKey={env.googleMapsApiKey} mapId={env.googleMapsMapId}>
         <LiveCar
           cameraMode={camera.mode}
