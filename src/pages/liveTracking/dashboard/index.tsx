@@ -55,19 +55,19 @@ const LiveTrackingDashboard = ({
   const dispatch = useDispatch();
   const eta = useSelector(selectEta);
 
-  const { driver, sseConnected, sseEvents } = useSelector(
+  const { driver, sseConnected } = useSelector(
     (state: RootState) => state.liveBooking,
   );
 
-  const etaEvent =
-    (sseEvents.eta as {
-      driverStatus?: DriverStatus;
-      eta?: number;
-      distance?: number;
-    }) || undefined;
+  // const etaEvent =
+  //   (sseEvents.eta as {
+  //     driverStatus?: DriverStatus;
+  //     eta?: number;
+  //     distance?: number;
+  //   }) || undefined;
 
-  const routeEvent =
-    (sseEvents.route_change as { driverStatus?: DriverStatus }) || undefined;
+  // const routeEvent =
+  //   (sseEvents.route_change as { driverStatus?: DriverStatus }) || undefined;
 
   // const driverStatus = eta?.driverStatus || routeEvent?.driverStatus;
 
@@ -83,8 +83,8 @@ const LiveTrackingDashboard = ({
   const statuses = getBookingStatuses(driverStatus ?? undefined);
 
   console.log("SSE connected:", sseConnected);
-  console.log("ETA event:", etaEvent);
-  console.log("Route change event:", routeEvent);
+  // console.log("ETA event:", etaEvent);
+  // console.log("Route change event:", routeEvent);
   console.log("Driver status:", driverStatus);
   console.log("Booking statuses:", statuses);
   console.log("Current driver status:", driverStatus);
