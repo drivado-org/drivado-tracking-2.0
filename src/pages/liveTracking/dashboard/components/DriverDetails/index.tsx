@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import type { DriverData } from "@/types/liveBooking";
-import { Dot, MessageCircle, Phone } from "lucide-react";
+import { Dot, MessageCircle } from "lucide-react";
 
 interface DriverDetailsProps {
   driver: DriverData;
