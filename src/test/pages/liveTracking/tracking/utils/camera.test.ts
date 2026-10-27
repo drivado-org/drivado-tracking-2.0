@@ -2,6 +2,7 @@ import {
   easeFactor,
   easeInOutCubic,
   fitCamera,
+  framePadding,
   lerpCamera,
 } from "@/pages/liveTracking/tracking/utils/camera";
 
@@ -62,5 +63,31 @@ describe("easing", () => {
     expect(easeInOutCubic(1)).toBe(1);
     expect(easeInOutCubic(0.1)).toBeLessThan(0.1);
     expect(easeInOutCubic(0.9)).toBeGreaterThan(0.9);
+  });
+});
+
+describe("framePadding", () => {
+  const BASE = { top: 60, right: 70, bottom: 60, left: 70 };
+
+  it("keeps the padding on a big map and adds the top inset to the bottom too", () => {
+    expect(framePadding(BASE, { width: 1200, height: 800 }, 0.18, 68)).toEqual({
+      ...BASE,
+      top: 128,
+      bottom: 128,
+    });
+  });
+
+  it("scales each side down evenly on a small map", () => {
+    const padding = framePadding(BASE, { width: 300, height: 200 }, 0.18);
+    expect(padding.left).toBeCloseTo(54);
+    expect(padding.right).toBeCloseTo(54);
+    expect(padding.top).toBeCloseTo(36);
+    expect(padding.bottom).toBeCloseTo(36);
+  });
+
+  it("frames the points in the middle of the map with even padding", () => {
+    const camera = fitCamera([A, B], SIZE, framePadding(BASE, SIZE, 0.18), 20)!;
+    expect(camera.center.lat).toBeCloseTo((A.lat + B.lat) / 2, 3);
+    expect(camera.center.lng).toBeCloseTo((A.lng + B.lng) / 2, 6);
   });
 });

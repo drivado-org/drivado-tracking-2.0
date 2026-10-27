@@ -3,6 +3,7 @@ import { useMap } from "@vis.gl/react-google-maps";
 import type { LatLng } from "@/types/geo";
 import type { CameraMode } from "../../constants/map";
 import {
+  APPROACH_ZOOM,
   AUTO_FOLLOW_METERS,
   AUTO_FOLLOW_MS,
   CAMERA_JUMP_METERS,
@@ -11,6 +12,8 @@ import {
   JOURNEY_EASE_PER_SECOND,
   JOURNEY_MAX_ZOOM,
   JOURNEY_PADDING_PX,
+  MAX_PADDING_SHARE,
+  ROUTE_FLY_MS,
   ROUTE_MAX_ZOOM,
   ROUTE_PADDING_PX,
 } from "../../constants/tracking";
@@ -19,6 +22,7 @@ import {
   easeFactor,
   easeInOutCubic,
   fitCamera,
+  framePadding,
   lerpCamera,
 } from "../../utils/camera";
 import { distanceMeters } from "../../utils/locationFilter";
@@ -38,6 +42,8 @@ type MapCameraProps = {
   ahead: LatLng[];
   route: LatLng[] | null;
   dropOff: LatLng | null;
+  /** The car is almost at the drop-off: the journey view and the lock zoom in further. */
+  approaching?: boolean;
   /** What the route ends at, for the toasts ("pickup", "drop-off"). */
   destinationName?: string;
   /** Height covered at the top of the map (a notice): framed points stay below it. */
@@ -46,7 +52,9 @@ type MapCameraProps = {
   onNotice?: (notice: MapNotice) => void;
 };
 
-type AutoFollow = { start: number; from: Camera };
+type AutoFollow = { start: number; from: Camera; zoom: number };
+/** A glide onto the whole route; start is set on its first frame. */
+type Flight = { start: number | null; from: Camera; to: Camera };
 
 const readCamera = (map: google.maps.Map): Camera | null => {
   const center = map.getCenter();
@@ -69,8 +77,11 @@ const pathMeters = (path: LatLng[]) =>
  * - journey (default): frames the car, the road left and the drop-off, and keeps re-framing
  *   as the car drives, so the view tightens by itself near the drop-off.
  * - follow: locked on the car. The user can still pinch the zoom.
- * - route: the whole route, fitted once. Near the drop-off it glides onto the car and
- *   switches to follow, once per trip.
+ * - route: the whole route, glided to and centred on a tap or a new route, and kept fitted
+ *   when the map is resized. Near the drop-off it glides onto the car and switches to
+ *   follow, once per trip.
+ * - approaching (near the drop-off): the journey view may zoom in to APPROACH_ZOOM, and the
+ *   lock glides in to it once per approach.
  * - free: a drag from any view, or a pinch in the journey view, leaves the map to the user.
  */
 const MapCamera = ({
@@ -80,6 +91,7 @@ const MapCamera = ({
   ahead,
   route,
   dropOff,
+  approaching = false,
   destinationName = "drop-off",
   topInset = 0,
   onModeChange,
@@ -93,6 +105,7 @@ const MapCamera = ({
     ahead,
     route,
     dropOff,
+    approaching,
     destinationName,
     topInset,
     metersLeft,
@@ -100,6 +113,8 @@ const MapCamera = ({
   const callbacksRef = useRef({ onModeChange, onNotice });
   const autoRef = useRef<AutoFollow | null>(null);
   const autoArmedRef = useRef(false);
+  const approachZoomedRef = useRef(false);
+  const flightRef = useRef<Flight | null>(null);
 
   useEffect(() => {
     latestRef.current = {
@@ -108,6 +123,7 @@ const MapCamera = ({
       ahead,
       route,
       dropOff,
+      approaching,
       destinationName,
       topInset,
       metersLeft,
@@ -120,34 +136,63 @@ const MapCamera = ({
     callbacksRef.current.onModeChange(next);
   };
 
-  const fitRoute = (map: google.maps.Map) => {
-    const { route, car, topInset } = latestRef.current;
-    const points = [...(route ?? []), ...(car ? [car] : [])];
+  /**
+   * Fits the whole route: gliding there, or at once (a resize). Only the road still ahead is
+   * drawn, so the part already driven is left out: it would push the drawn route off centre.
+   */
+  const fitRoute = (map: google.maps.Map, glide: boolean) => {
+    const { route, ahead, car, dropOff, topInset } = latestRef.current;
+    const drawn = ahead.length >= 2 ? ahead : (route ?? []);
+    const points = [...drawn, ...(car ? [car] : []), ...(dropOff ? [dropOff] : [])];
+    const size = sizeOf(map);
     const camera = fitCamera(
       points,
-      sizeOf(map),
-      { ...ROUTE_PADDING_PX, top: ROUTE_PADDING_PX.top + topInset },
+      size,
+      framePadding(ROUTE_PADDING_PX, size, MAX_PADDING_SHARE, topInset),
       ROUTE_MAX_ZOOM,
     );
-    if (camera) map.moveCamera(camera);
+    if (!camera) return;
+    const from = glide ? readCamera(map) : null;
+    if (from) {
+      flightRef.current = { start: null, from, to: camera };
+    } else {
+      flightRef.current = null;
+      map.moveCamera(camera);
+    }
   };
 
-  // A tap jumps the route and the lock into place; the journey view glides in the frame loop.
+  // A tap glides to the whole route and jumps onto the car; the journey view glides in the
+  // frame loop.
   useEffect(() => {
     if (!map || tap === 0) return;
     autoRef.current = null;
     const { mode, car } = latestRef.current;
-    if (mode === "route") fitRoute(map);
+    if (mode === "route") fitRoute(map, true);
     if (mode === "follow" && car) map.moveCamera({ center: car, zoom: FOLLOW_ZOOM });
   }, [map, tap]);
 
-  // The whole route stays fitted through a new route and a resized window.
+  // The whole route stays fitted and centred through a new route and a resized map (window,
+  // rotated phone, a panel opening beside it).
   useEffect(() => {
     if (!map || mode !== "route") return;
-    fitRoute(map);
-    const onResize = () => fitRoute(map);
+    fitRoute(map, true);
+    const div = map.getDiv();
+    let size = sizeOf(map);
+    const onResize = () => {
+      const next = sizeOf(map);
+      if (next.width === size.width && next.height === size.height) return;
+      size = next;
+      fitRoute(map, false);
+    };
+    const observer =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(onResize);
+    observer?.observe(div);
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", onResize);
+      flightRef.current = null;
+    };
   }, [map, mode, route]);
 
   // The user taking over.
@@ -156,6 +201,7 @@ const MapCamera = ({
 
     const dragListener = map.addListener("dragstart", () => {
       autoRef.current = null;
+      flightRef.current = null;
       if (latestRef.current.mode !== "free") setMode("free");
     });
 
@@ -196,14 +242,23 @@ const MapCamera = ({
     const step = (now: number) => {
       const dt = last === null ? 0 : Math.min(MAX_FRAME_SECONDS, (now - last) / 1000);
       last = now;
-      const { mode, car, ahead, dropOff, destinationName, topInset, metersLeft } =
+      const { mode, car, ahead, dropOff, approaching, destinationName, topInset, metersLeft } =
         latestRef.current;
+      if (!approaching) approachZoomedRef.current = false;
       const current = readCamera(map);
+
+      const flight = flightRef.current;
+      if (flight && mode === "route") {
+        flight.start ??= now;
+        const k = Math.min(1, (now - flight.start) / ROUTE_FLY_MS);
+        map.moveCamera(lerpCamera(flight.from, flight.to, easeInOutCubic(k)));
+        if (k >= 1) flightRef.current = null;
+      }
 
       if (car && current) {
         if (mode === "route" && !autoArmedRef.current && metersLeft <= AUTO_FOLLOW_METERS) {
           autoArmedRef.current = true;
-          autoRef.current = { start: now, from: current };
+          autoRef.current = { start: now, from: current, zoom: FOLLOW_ZOOM };
           setMode("follow");
           callbacksRef.current.onNotice?.({
             text: `Approaching ${destinationName} — following the vehicle`,
@@ -211,11 +266,19 @@ const MapCamera = ({
           });
         }
 
+        // Almost there with the lock on: zoom in once, unless the user already pinched closer.
+        if (mode === "follow" && approaching && !approachZoomedRef.current && !autoRef.current) {
+          approachZoomedRef.current = true;
+          if (current.zoom < APPROACH_ZOOM) {
+            autoRef.current = { start: now, from: current, zoom: APPROACH_ZOOM };
+          }
+        }
+
         const auto = autoRef.current;
         if (auto) {
           const k = Math.min(1, (now - auto.start) / AUTO_FOLLOW_MS);
           map.moveCamera(
-            lerpCamera(auto.from, { center: car, zoom: FOLLOW_ZOOM }, easeInOutCubic(k)),
+            lerpCamera(auto.from, { center: car, zoom: auto.zoom }, easeInOutCubic(k)),
           );
           if (k >= 1) autoRef.current = null;
         } else if (mode === "follow") {
@@ -225,11 +288,12 @@ const MapCamera = ({
             easeFactor(FOLLOW_EASE_PER_SECOND, dt),
           );
         } else if (mode === "journey") {
+          const size = sizeOf(map);
           const target = fitCamera(
             [car, ...ahead, ...(dropOff ? [dropOff] : [])],
-            sizeOf(map),
-            { ...JOURNEY_PADDING_PX, top: JOURNEY_PADDING_PX.top + topInset },
-            JOURNEY_MAX_ZOOM,
+            size,
+            framePadding(JOURNEY_PADDING_PX, size, MAX_PADDING_SHARE, topInset),
+            approaching ? APPROACH_ZOOM : JOURNEY_MAX_ZOOM,
           );
           if (target) glide(current, target, easeFactor(JOURNEY_EASE_PER_SECOND, dt));
         }

@@ -11,11 +11,13 @@ import {
   selectTrackPoints,
 } from "@/store/tracking/trackingSlice";
 import useCarAnimation from "../../hooks/useCarAnimation";
+import useGeofence from "../../hooks/useGeofence";
 import useRouteProgress from "../../hooks/useRouteProgress";
 import useShownStatus from "../../hooks/useShownStatus";
 import useTurningHeading from "../../hooks/useTurningHeading";
 import { formatDuration, toEtaMinutes } from "@/utils/etaFormat";
 import type { CameraMode } from "../../constants/map";
+import { GEOFENCE_SHOW_METERS } from "../../constants/tracking";
 import {
   destinationLabel,
   destinationName,
@@ -25,6 +27,7 @@ import {
 } from "../../utils/tripStage";
 import CarMarker from "../CarMarker";
 import DestinationMarker from "../DestinationMarker";
+import GeofenceArea from "../GeofenceArea";
 import MapCamera from "../MapCamera";
 import type { MapNotice } from "../MapToast";
 import RoutePolyline from "../RoutePolyline";
@@ -77,8 +80,26 @@ const LiveCar = ({
     if (notice) onNotice?.(notice);
   }, [shownStatus, onNotice]);
 
+  const inGeofence = useGeofence(carPosition, destination);
+  // The area is drawn, and the camera tightens, only once the car is almost there.
+  const approaching = useGeofence(carPosition, destination, GEOFENCE_SHOW_METERS);
+
+  // Only while driving: once ARRIVED / COMPLETED show, their own toast says it.
+  useEffect(() => {
+    if (inGeofence && isDriving(shownStatus)) {
+      onNotice?.({
+        text: `Driver is near the ${destinationName(shownStatus)}`,
+        icon: "nearby",
+      });
+    }
+  }, [inGeofence, shownStatus, onNotice]);
+
   return (
     <>
+      <GeofenceArea
+        center={approaching ? destination : null}
+        active={inGeofence}
+      />
       <RoutePolyline points={remaining} rerouting={rerouting} />
 
       <DestinationMarker
@@ -102,6 +123,7 @@ const LiveCar = ({
         ahead={remaining}
         route={route}
         dropOff={destination}
+        approaching={approaching}
         destinationName={destinationName(shownStatus)}
         topInset={topInset}
         onModeChange={onCameraModeChange}

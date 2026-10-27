@@ -57,7 +57,7 @@ const DestinationMarker = ({
       zIndex={5}
     >
       <div className="relative">
-        {label && <MapLabel className="tracking-wider">{label}</MapLabel>}
+        {label && <MapLabel className="text-xs tracking-wider md:text-sm">{label}</MapLabel>}
         {pin ? (
           <PickupPin />
         ) : (

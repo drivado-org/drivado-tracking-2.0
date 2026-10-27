@@ -20,6 +20,27 @@ const fromWorldY = (y: number) =>
   (360 / Math.PI) * Math.atan(Math.exp((0.5 - y) * 2 * Math.PI)) - 90;
 
 /**
+ * The padding scaled down for a small map (each side at most `maxShare` of the map's width or
+ * height). `topInset` (what covers the top of the map) is added to the bottom too, so what is
+ * framed stays in the middle of the map.
+ */
+export const framePadding = (
+  base: Padding,
+  size: Size,
+  maxShare: number,
+  topInset = 0,
+): Padding => {
+  const maxX = size.width * maxShare;
+  const maxY = size.height * maxShare;
+  return {
+    top: Math.min(base.top, maxY) + topInset,
+    right: Math.min(base.right, maxX),
+    bottom: Math.min(base.bottom, maxY) + topInset,
+    left: Math.min(base.left, maxX),
+  };
+};
+
+/**
  * Camera that shows every point inside the map minus the padding, like fitBounds, but
  * computed instead of applied: the caller can glide to it.
  * Zoom is fractional (vector maps draw any zoom) and never above maxZoom.

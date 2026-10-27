@@ -49,6 +49,15 @@ describe("useRouteProgress", () => {
     expect(result.current.remaining).toEqual(PATH);
   });
 
+  it("keeps the line from where the car left the route through a GPS jump", () => {
+    const onRoute = { lat: 22.57, lng: 88.4015 };
+    const { result, rerender } = render(PATH, onRoute);
+    const before = result.current.remaining;
+
+    rerender({ path: PATH, position: { lat: 22.571, lng: 88.4016 } });
+    expect(result.current.remaining).toEqual(before);
+  });
+
   it("passes the position through without a route", () => {
     const position = { lat: 22.57, lng: 88.4015 };
     const { result } = render(null, position);
@@ -59,10 +68,10 @@ describe("useRouteProgress", () => {
 
   it("never brings back segments already driven", () => {
     const { result, rerender } = render(PATH, { lat: 22.57, lng: 88.4025 });
-    // A noisy point back near the start.
+    // A noisy point back near the start: the line still starts where the car was.
     rerender({ path: PATH, position: { lat: 22.57, lng: 88.4002 } });
 
-    expect(result.current.remaining[0].lng).toBeCloseTo(88.402, 6);
+    expect(result.current.remaining[0].lng).toBeCloseTo(88.4025, 6);
     expect(result.current.remaining.at(-1)).toEqual(PATH[3]);
   });
 

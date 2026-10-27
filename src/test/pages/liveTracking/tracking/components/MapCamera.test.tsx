@@ -2,9 +2,11 @@ import { act, fireEvent, render } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import MapCamera from "@/pages/liveTracking/tracking/components/MapCamera";
 import {
+  APPROACH_ZOOM,
   AUTO_FOLLOW_MS,
   FOLLOW_ZOOM,
   JOURNEY_MAX_ZOOM,
+  ROUTE_FLY_MS,
 } from "@/pages/liveTracking/tracking/constants/tracking";
 
 type LatLng = { lat: number; lng: number };
@@ -113,6 +115,19 @@ describe("MapCamera", () => {
       expect(map().zoom).toBeLessThanOrEqual(JOURNEY_MAX_ZOOM);
     });
 
+    it("zooms in past the usual cap when the car is almost there", () => {
+      const close = { lat: 22.5822, lng: 88.3735 }; // ~60 m from the drop-off
+      const closeProps = { car: close, ahead: [close, DROP_OFF] };
+      const { rerender } = render(<MapCamera {...props(closeProps)} />);
+      run(5000);
+      expect(map().zoom).toBeCloseTo(JOURNEY_MAX_ZOOM, 2);
+
+      rerender(<MapCamera {...props({ ...closeProps, approaching: true })} />);
+      run(5000);
+      expect(map().zoom).toBeGreaterThan(JOURNEY_MAX_ZOOM);
+      expect(map().zoom).toBeLessThanOrEqual(APPROACH_ZOOM);
+    });
+
     it("jumps to a car that is far away", () => {
       mapInstance = createFakeMap({ lat: 22.0, lng: 88.0 });
       render(<MapCamera {...props()} />);
@@ -156,6 +171,21 @@ describe("MapCamera", () => {
       expect(map().zoom).toBe(18);
     });
 
+    it("zooms in once when the car is almost there", () => {
+      const followProps = { mode: "follow" as const, tap: 1 };
+      const { rerender } = render(<MapCamera {...props(followProps)} />);
+      expect(map().zoom).toBe(FOLLOW_ZOOM);
+
+      rerender(<MapCamera {...props({ ...followProps, approaching: true })} />);
+      run(AUTO_FOLLOW_MS + 100);
+      expect(map().zoom).toBe(APPROACH_ZOOM);
+
+      // Pinched back out: it stays where the user put it.
+      map().zoom = 16;
+      run(2000);
+      expect(map().zoom).toBe(16);
+    });
+
     it("keeps the lock through a pinch", () => {
       const onModeChange = vi.fn();
       render(<MapCamera {...props({ mode: "follow", onModeChange })} />);
@@ -165,28 +195,92 @@ describe("MapCamera", () => {
   });
 
   describe("whole route", () => {
-    it("fits the whole route when tapped", () => {
+    it("glides to the whole route when tapped, then stays put", () => {
       const { rerender } = render(<MapCamera {...props()} />);
       run(5000);
       const journeyZoom = map().zoom;
-      rerender(<MapCamera {...props({ mode: "route", tap: 1 })} />);
+      // The car has not set off yet: the whole route is still ahead of it.
+      rerender(<MapCamera {...props({ mode: "route", tap: 1, ahead: ROUTE })} />);
 
-      // The route starts further south than anything the journey view shows.
-      expect(map().zoom).toBeLessThan(journeyZoom);
+      // Part way, then there: the route starts further south than the journey view shows.
+      run(ROUTE_FLY_MS / 2);
+      const halfway = map().zoom;
+      expect(halfway).toBeLessThan(journeyZoom);
+      run(ROUTE_FLY_MS);
+      expect(map().zoom).toBeLessThan(halfway);
+
       const calls = map().moveCamera.mock.calls.length;
       run(500);
-      expect(map().moveCamera.mock.calls.length).toBe(calls); // then stays put
+      expect(map().moveCamera.mock.calls.length).toBe(calls);
     });
 
-    it("refits for a new route", () => {
-      const { rerender } = render(<MapCamera {...props({ mode: "route", tap: 1 })} />);
-      const calls = map().moveCamera.mock.calls.length;
-      rerender(
+    it("centres the route on the map, even under a notice", () => {
+      // A route straight north-south through the middle of the map.
+      const route = [
+        { lat: 22.56, lng: 88.37 },
+        { lat: 22.58, lng: 88.37 },
+      ];
+      render(
         <MapCamera
-          {...props({ mode: "route", tap: 1, route: [{ lat: 22.5, lng: 88.3 }, DROP_OFF] })}
+          {...props({
+            mode: "route",
+            tap: 1,
+            car: route[0],
+            ahead: route,
+            route,
+            dropOff: route[1],
+            topInset: 68,
+          })}
         />,
       );
-      expect(map().moveCamera.mock.calls.length).toBe(calls + 1);
+      run(ROUTE_FLY_MS + 100);
+      expect(map().center.lat).toBeCloseTo(22.57, 3);
+      expect(map().center.lng).toBeCloseTo(88.37, 6);
+    });
+
+    it("centres the road still ahead, leaving out the part already driven", () => {
+      const ahead = [
+        { lat: 22.56, lng: 88.37 },
+        { lat: 22.58, lng: 88.37 },
+      ];
+      // Driven already, far to the south-west: not drawn, so not framed.
+      const route = [{ lat: 22.5, lng: 88.3 }, ...ahead];
+      render(
+        <MapCamera
+          {...props({ mode: "route", tap: 1, car: ahead[0], ahead, route, dropOff: ahead[1] })}
+        />,
+      );
+      run(ROUTE_FLY_MS + 100);
+      expect(map().center.lat).toBeCloseTo(22.57, 3);
+      expect(map().center.lng).toBeCloseTo(88.37, 6);
+    });
+
+    it("glides to a new route", () => {
+      const { rerender } = render(<MapCamera {...props({ mode: "route", tap: 1 })} />);
+      run(ROUTE_FLY_MS + 100);
+      const before = { ...map().center };
+      rerender(
+        <MapCamera
+          {...props({
+            mode: "route",
+            tap: 1,
+            car: { lat: 22.5, lng: 88.3 },
+            ahead: [{ lat: 22.5, lng: 88.3 }, DROP_OFF],
+            route: [{ lat: 22.5, lng: 88.3 }, DROP_OFF],
+          })}
+        />,
+      );
+      run(ROUTE_FLY_MS + 100);
+      expect(map().center.lat).toBeLessThan(before.lat);
+    });
+
+    it("stops gliding to the route on a drag", () => {
+      render(<MapCamera {...props({ mode: "route", tap: 1 })} />);
+      run(100);
+      map().fire("dragstart");
+      const calls = map().moveCamera.mock.calls.length;
+      run(ROUTE_FLY_MS);
+      expect(map().moveCamera.mock.calls.length).toBe(calls);
     });
 
     it("glides onto the car near the drop-off, once", () => {
