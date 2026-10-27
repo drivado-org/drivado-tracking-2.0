@@ -13,7 +13,7 @@ import {
 } from "./primitives";
 
 // Backend shapes accepted (update only this file when they change):
-//   SSE snapshot: { driverID, bookingID, tripID, tripType, driverStatus, location: { lat, lng, timestamp }, sequence }
+//   SSE snapshot: { driverID, bookingID, tripID, tripType, bookingStatus | driverStatus, location: { lat, lng, timestamp }, sequence }
 //   SSE location: { lat, lng, timestamp } (every second after the snapshot, no ids)
 //   Location API: { data: [{ driverID, bookingID, tripID, lat, lng, clientTimeUTC }] }
 // tripType / driverStatus / sequence are optional: the backend plans to drop them.
@@ -22,12 +22,14 @@ const TRIP_TYPES: readonly TripType[] = ["TRIP_S", "TRIP_D"];
 
 const DRIVER_STATUSES: readonly DriverStatus[] = [
   "ENROUTE",
-  "ARRIVE",
   "ARRIVED",
   "POB",
   "COMPLETED",
   "NOSHOW",
 ];
+
+/** Other spellings the backend sends for a status. */
+const STATUS_ALIASES: Record<string, DriverStatus> = { ARRIVE: "ARRIVED" };
 
 const toEnumValue = <T extends string>(values: readonly T[], value: unknown): T | null => {
   if (typeof value !== "string") return null;
@@ -35,8 +37,24 @@ const toEnumValue = <T extends string>(values: readonly T[], value: unknown): T 
   return (values as readonly string[]).includes(normalized) ? (normalized as T) : null;
 };
 
-export const parseDriverStatus = (value: unknown): DriverStatus | null =>
-  toEnumValue(DRIVER_STATUSES, value);
+/** Case and spaces don't matter; "ARRIVE" reads as "ARRIVED". */
+export const parseDriverStatus = (value: unknown): DriverStatus | null => {
+  const alias = typeof value === "string" ? STATUS_ALIASES[value.trim().toUpperCase()] : undefined;
+  return alias ?? toEnumValue(DRIVER_STATUSES, value);
+};
+
+const isBlank = (value: unknown) => value === undefined || value === null || value === "";
+
+/**
+ * The trip status of a payload: bookingStatus, else driverStatus.
+ * undefined when neither is sent; null when the value is not a known status.
+ */
+export const readTripStatus = (
+  payload: Record<string, unknown>,
+): DriverStatus | null | undefined => {
+  const raw = isBlank(payload.bookingStatus) ? payload.driverStatus : payload.bookingStatus;
+  return isBlank(raw) ? undefined : parseDriverStatus(raw);
+};
 
 export const parseTripType = (value: unknown): TripType | null =>
   toEnumValue(TRIP_TYPES, value);
@@ -100,7 +118,7 @@ export const parseTrackingPayload = (raw: unknown): TrackingPayload | null => {
       bookingID,
       tripID,
       tripType: parseTripType(payload.tripType),
-      driverStatus: parseDriverStatus(payload.driverStatus),
+      driverStatus: readTripStatus(payload) ?? null,
       lat: position.lat,
       lng: position.lng,
       timestamp: new Date(timestampMs).toISOString(),

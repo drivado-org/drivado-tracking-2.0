@@ -2,6 +2,7 @@ import type { TrackingPayload, TrackingState } from "@/types/tracking";
 import { MAX_TRACK_POINTS } from "@/pages/liveTracking/tracking/constants/tracking";
 import reducer, {
   selectDriverPoint,
+  selectDriverStatus,
   selectDriverPosition,
   startTracking,
   stopTracking,
@@ -138,6 +139,22 @@ describe("trackingSlice reducers", () => {
       trackingLocationUpdate({ lat: 1, lng: 1, timestamp: "2026-09-15T12:30:10.000Z" }),
     );
     expect(late.points).toHaveLength(1);
+  });
+
+  it("never moves the trip back a step (late events)", () => {
+    const onBoard = reducer(reducer(initial, trackingUpdate(point())), trackingStatusUpdate("POB"));
+    const late = reducer(onBoard, trackingStatusUpdate("ARRIVED"));
+    expect(late.driverStatus).toBe("POB");
+    expect(late.data?.driverStatus).toBe("POB");
+
+    const snapshot = reducer(
+      late,
+      trackingUpdate(point({ driverStatus: "ENROUTE", timestamp: "2026-09-15T12:31:00.000Z" })),
+    );
+    expect(selectDriverStatus({ tracking: snapshot })).toBe("POB");
+    expect(snapshot.data?.driverStatus).toBe("POB");
+
+    expect(reducer(late, trackingStatusUpdate("COMPLETED")).driverStatus).toBe("COMPLETED");
   });
 
   it("trackingStatusUpdate keeps the status with or without a snapshot", () => {

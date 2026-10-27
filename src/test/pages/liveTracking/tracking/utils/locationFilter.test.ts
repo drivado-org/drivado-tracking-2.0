@@ -47,13 +47,13 @@ describe("applyPoint", () => {
     expect(applyPoint(EMPTY_TRACK, START)).toEqual(started);
   });
 
-  it("moves previous to current on a normal move and faces the direction of travel", () => {
+  it("moves previous to current on a normal move", () => {
     const next = at(22.5727, 88.3639, 1);
     expect(applyPoint(started, next)).toEqual({
       previous: START,
       current: next,
-      heading: expect.closeTo(0, 5),
       rejectedInARow: 0,
+      route: null,
     });
   });
 
@@ -62,16 +62,16 @@ describe("applyPoint", () => {
     expect(applyPoint(started, at(22.5727, 88.3639, -1))).toBe(started);
   });
 
-  it("ignores drift under 3 m while parked", () => {
-    expect(applyPoint(started, at(22.57261, 88.3639, 1))).toBe(started);
+  it("ignores drift under 8 m while parked", () => {
+    expect(applyPoint(started, at(22.57265, 88.3639, 1))).toBe(started); // ~5.5 m
   });
 
-  it("accepts a slow crawl once it adds up to 3 m from the last accepted point", () => {
-    let track = applyPoint(started, at(22.57261, 88.3639, 1)); // ~1.1 m
-    track = applyPoint(track, at(22.57262, 88.3639, 2)); // ~2.2 m
+  it("accepts a slow crawl once it adds up to 8 m from the last accepted point", () => {
+    let track = applyPoint(started, at(22.57263, 88.3639, 1)); // ~3.3 m
+    track = applyPoint(track, at(22.57266, 88.3639, 2)); // ~6.6 m
     expect(track.current).toBe(START);
-    track = applyPoint(track, at(22.57263, 88.3639, 3)); // ~3.3 m
-    expect(track.current).toEqual(at(22.57263, 88.3639, 3));
+    track = applyPoint(track, at(22.57268, 88.3639, 3)); // ~8.9 m
+    expect(track.current).toEqual(at(22.57268, 88.3639, 3));
   });
 
   it("rejects a spike faster than ~200 km/h and keeps the car where it was", () => {
@@ -94,5 +94,81 @@ describe("applyPoint", () => {
     track = applyPoint(track, fourth);
     expect(track.current).toBe(fourth);
     expect(track.rejectedInARow).toBe(0);
+  });
+});
+
+describe("applyPoint on a route", () => {
+  // Straight north from START: ~11 m per 0.0001° of latitude, ~1.1 km long.
+  const ROUTE = [0, 0.0025, 0.005, 0.0075, 0.01].map((d) => ({
+    lat: 22.5726 + d,
+    lng: 88.3639,
+  }));
+  /** `meters` north of START along the route, `side` meters east of it, at `seconds`. */
+  const onRoute = (meters: number, seconds: number, side = 0) =>
+    at(22.5726 + meters / 111_000, 88.3639 + side / 102_800, seconds);
+
+  const drive = (...points: TrackPoint[]) =>
+    points.reduce((track, point) => applyPoint(track, point, ROUTE), EMPTY_TRACK);
+
+  it("remembers how far along the route the car is", () => {
+    const track = drive(onRoute(0, 0), onRoute(300, 30, 5));
+    expect(track.route!.alongMeters).toBeCloseTo(300, -1);
+    expect(track.route!.segmentIndex).toBe(1);
+  });
+
+  it("rejects a point that goes back along the route", () => {
+    const track = drive(onRoute(0, 0), onRoute(300, 30), onRoute(250, 31));
+    expect(track.current).toEqual(onRoute(300, 30));
+    expect(track.rejectedInARow).toBe(1);
+  });
+
+  it("accepts a small wobble back along the route", () => {
+    const track = drive(onRoute(0, 0), onRoute(300, 30), onRoute(290, 31, 6));
+    expect(track.current).toEqual(onRoute(290, 31, 6));
+  });
+
+  it("trusts the car going back after 3 rejected points in a row (U-turn)", () => {
+    const track = drive(
+      onRoute(0, 0),
+      onRoute(300, 30),
+      onRoute(260, 34),
+      onRoute(230, 37),
+      onRoute(200, 40),
+      onRoute(170, 43),
+    );
+    expect(track.current).toEqual(onRoute(170, 43));
+    expect(track.rejectedInARow).toBe(0);
+  });
+
+  it("rejects a blip off the route and keeps going after it", () => {
+    let track = drive(onRoute(0, 0), onRoute(300, 30));
+    track = applyPoint(track, onRoute(310, 31, 80), ROUTE);
+    expect(track.current).toEqual(onRoute(300, 30));
+
+    track = applyPoint(track, onRoute(320, 32), ROUTE);
+    expect(track.current).toEqual(onRoute(320, 32));
+    expect(track.rejectedInARow).toBe(0);
+  });
+
+  it("trusts the car leaving the route after 3 off-route points in a row", () => {
+    const track = drive(
+      onRoute(0, 0),
+      onRoute(300, 30),
+      onRoute(300, 33, 70),
+      onRoute(300, 36, 100),
+      onRoute(300, 39, 130),
+      onRoute(300, 42, 160),
+    );
+    expect(track.current).toEqual(onRoute(300, 42, 160));
+    expect(track.route).toBeNull();
+  });
+
+  it("does not compare points on a new route with the old one", () => {
+    const newRoute = [...ROUTE].reverse();
+    let track = drive(onRoute(0, 0), onRoute(300, 30));
+    // Far along the old route, near the start of the new one: not "going back".
+    track = applyPoint(track, onRoute(250, 31), newRoute);
+    expect(track.current).toEqual(onRoute(250, 31));
+    expect(track.route!.path).toBe(newRoute);
   });
 });

@@ -17,12 +17,20 @@ vi.mock("@/server/sse/tracking-action", () => ({
   trackingAction: vi.fn(() => new Promise(() => {})),
 }));
 
+const mapDiv = document.createElement("div");
+Object.defineProperty(mapDiv, "clientWidth", { value: 400 });
+Object.defineProperty(mapDiv, "clientHeight", { value: 600 });
+
 const fakeMap = {
   center: { lat: 0, lng: 0 },
+  zoom: 15,
   getCenter: () => ({ lat: () => fakeMap.center.lat, lng: () => fakeMap.center.lng }),
+  getZoom: () => fakeMap.zoom,
+  getDiv: () => mapDiv,
   // Plain functions: restoreMocks in vitest.config would wipe a vi.fn implementation.
-  moveCamera: (options: { center: { lat: number; lng: number } }) => {
-    fakeMap.center = { ...options.center };
+  moveCamera: (options: { center?: { lat: number; lng: number }; zoom?: number }) => {
+    if (options.center) fakeMap.center = { ...options.center };
+    if (options.zoom !== undefined) fakeMap.zoom = options.zoom;
   },
   addListener: () => ({ remove: () => {} }),
 };
@@ -42,7 +50,7 @@ vi.mock("@vis.gl/react-google-maps", () => ({
       {props.children}
     </div>
   ),
-  AdvancedMarkerAnchorPoint: { CENTER: ["-50%", "-50%"] },
+  AdvancedMarkerAnchorPoint: { CENTER: ["-50%", "-50%"], BOTTOM_CENTER: ["-50%", "-100%"] },
   RenderingType: { VECTOR: "VECTOR" },
 }));
 
@@ -117,12 +125,13 @@ describe("Tracking page", () => {
       lat: 22.5736,
       lng: 88.3639,
     });
-    // The camera follows the car. React applies renders when act() ends, so give the
-    // camera loop frames after the car's final position has rendered.
+    // The journey view frames the car (no route yet: just the car, ~13 m off centre
+    // for the label above it). React applies renders when act() ends, so give the camera
+    // loop time after the car's final position has rendered.
     act(() => {
-      vi.advanceTimersByTime(100);
+      vi.advanceTimersByTime(3000);
     });
-    expect(fakeMap.center.lat).toBeCloseTo(22.5736, 6);
+    expect(fakeMap.center.lat).toBeCloseTo(22.5736, 3);
     vi.useRealTimers();
   });
 

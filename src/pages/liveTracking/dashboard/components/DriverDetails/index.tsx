@@ -55,13 +55,13 @@ const DriverDetails = ({ driver }: DriverDetailsProps) => {
             <MessageCircle className="h-4 w-4" />
           </Button>
 
-          <Button
+          {/* <Button
             type="button"
             aria-label="Call driver"
             className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 transition-colors hover:bg-slate-50 cursor-pointer"
           >
             <Phone className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
       </div>
 

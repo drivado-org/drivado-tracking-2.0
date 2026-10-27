@@ -5,7 +5,11 @@ import type {
   RouteState,
   TripVehicleMeta,
 } from "@/types/route";
+import type { LatLng } from "@/types/geo";
 import { startTracking } from "@/store/tracking/trackingSlice";
+
+const samePath = (a: LatLng[], b: LatLng[]) =>
+  a.length === b.length && a.every((p, i) => p.lat === b[i].lat && p.lng === b[i].lng);
 
 const initialState: RouteState = {
   route: null,
@@ -20,7 +24,12 @@ const routeSlice = createSlice({
 
   reducers: {
     routeChanged: (state, action: PayloadAction<RouteChange>) => {
-      state.route = action.payload;
+      const previous = state.route?.routePath;
+      // The same route sent again keeps the same array: the car and the line don't start over.
+      state.route =
+        previous && samePath(previous, action.payload.routePath)
+          ? { ...action.payload, routePath: previous }
+          : action.payload;
       // The new route is the answer to the reroute.
       if (state.vehicleMeta) state.vehicleMeta.reroute = false;
     },

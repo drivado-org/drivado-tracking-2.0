@@ -28,6 +28,9 @@ export type TrackSample = {
   movingHeading: number | null;
   /** While standing before a move: when that move starts. null when there is no next move yet. */
   standingUntil: number | null;
+  /** Between points[index] and points[index + 1], share t (0..1) of the way. */
+  index: number;
+  t: number;
 };
 
 /**
@@ -40,7 +43,13 @@ export const sampleTrack = (points: readonly TrackPoint[], time: number): TrackS
 
   const first = points[0];
   if (time < timeOf(first)) {
-    return { position: toLatLng(first), movingHeading: null, standingUntil: timeOf(first) };
+    return {
+      position: toLatLng(first),
+      movingHeading: null,
+      standingUntil: timeOf(first),
+      index: 0,
+      t: 0,
+    };
   }
 
   for (let i = 0; i < points.length - 1; i++) {
@@ -51,7 +60,7 @@ export const sampleTrack = (points: readonly TrackPoint[], time: number): TrackS
 
     const start = Math.max(timeOf(from), end - MAX_SEGMENT_MS);
     if (time < start) {
-      return { position: toLatLng(from), movingHeading: null, standingUntil: start };
+      return { position: toLatLng(from), movingHeading: null, standingUntil: start, index: i, t: 0 };
     }
 
     const t = (time - start) / (end - start);
@@ -62,11 +71,19 @@ export const sampleTrack = (points: readonly TrackPoint[], time: number): TrackS
       },
       movingHeading: bearingDegrees(from, to),
       standingUntil: null,
+      index: i,
+      t,
     };
   }
 
   // Caught up with the newest point: wait there for the next one.
-  return { position: toLatLng(points[points.length - 1]), movingHeading: null, standingUntil: null };
+  return {
+    position: toLatLng(points[points.length - 1]),
+    movingHeading: null,
+    standingUntil: null,
+    index: points.length - 1,
+    t: 0,
+  };
 };
 
 /** How far behind live to play: enough to cover the usual gap between points plus jitter. */

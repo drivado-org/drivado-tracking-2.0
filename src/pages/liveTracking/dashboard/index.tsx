@@ -10,6 +10,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
 import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
 import { selectEta } from "@/store/route/routeSlice";
+import { selectDriverStatus } from "@/store/tracking/trackingSlice";
 import { formatClockTime, toEtaMinutes, toKilometres } from "@/utils/etaFormat";
 import type { BookingStatusData, TripMetricsData } from "@/types/liveBooking";
 
@@ -74,7 +75,8 @@ const LiveTrackingDashboard = ({
   //   | { driverStatus?: DriverStatus }
   //   | undefined;
 
-  const driverStatus = eta?.driverStatus;
+  // From every stream event (eta, route_change, vehicle_meta, snapshot), not only eta.
+  const driverStatus = useSelector(selectDriverStatus);
 
   // const bookingStatuses = getBookingStatuses(driverStatus ?? undefined);
 
