@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LatLng } from "@/types/geo";
 import { bearingDegrees } from "../utils/locationFilter";
 import { remainingRoute } from "../utils/routeProgress";
@@ -22,6 +22,8 @@ const segmentHeading = (path: LatLng[], index: number): number | null => {
  *   moves and turns nothing.
  * - Driven segments are erased for good: the match only searches forward from the last one.
  * - A new route (route_change) starts again from its first segment.
+ * - A GPS jump off the route keeps the line starting where the car last was on it, instead
+ *   of growing back to the start of the segment and shrinking again (flicker).
  */
 const useRouteProgress = (path: LatLng[] | null, position: LatLng | null) => {
   const [progress, setProgress] = useState<Progress>({ path, segmentIndex: 0 });
@@ -31,12 +33,23 @@ const useRouteProgress = (path: LatLng[] | null, position: LatLng | null) => {
     path && path.length >= 2 ? remainingRoute(path, position, fromIndex) : null;
   const segmentIndex = rest?.segmentIndex ?? 0;
 
+  // Where the car last was on this route, for frames where it is off it.
+  const lastOnRouteRef = useRef<{ path: LatLng[] | null; point: LatLng } | null>(null);
+  useEffect(() => {
+    if (rest?.snapped) lastOnRouteRef.current = { path, point: rest.snapped };
+  });
+  const lastOnRoute = lastOnRouteRef.current;
+  const remaining =
+    rest && !rest.snapped && path && lastOnRoute?.path === path
+      ? [lastOnRoute.point, ...path.slice(segmentIndex + 1)]
+      : (rest?.points ?? []);
+
   if (progress.path !== path || progress.segmentIndex !== segmentIndex) {
     setProgress({ path, segmentIndex });
   }
 
   return {
-    remaining: rest?.points ?? [],
+    remaining,
     carPosition: rest?.snapped ?? position,
     /** -180..180 while on the route; null off it (use the GPS heading). */
     routeHeading: path && rest?.snapped ? segmentHeading(path, segmentIndex) : null,

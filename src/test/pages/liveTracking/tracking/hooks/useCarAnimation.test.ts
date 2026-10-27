@@ -33,6 +33,31 @@ const run = (ms: number) =>
 const northAt = (k: number) => at(22.57 + k * 0.0001, 88.4, k);
 
 describe("useCarAnimation", () => {
+  it("drives round a bend on the route instead of cutting the corner", () => {
+    // ~103 m east, then north.
+    const route = [
+      { lat: 22.57, lng: 88.4 },
+      { lat: 22.57, lng: 88.401 },
+      { lat: 22.572, lng: 88.401 },
+    ];
+    // The first two points are either side of the bend: a straight line between them cuts it.
+    const sent = [at(22.57, 88.4, 0), at(22.5703, 88.401, 3), at(22.5706, 88.401, 4)];
+    const { result } = renderHook(() => useCarAnimation(sent, null, route));
+
+    const drawn: { lat: number; lng: number }[] = [];
+    for (let f = 0; f < 8000 / 16; f++) {
+      run(16);
+      if (result.current.position) drawn.push(result.current.position);
+    }
+
+    expect(drawn.some((p) => p.lng > 88.4005 && p.lng < 88.401)).toBe(true);
+    for (const p of drawn) {
+      const onEastLeg = Math.abs(p.lat - 22.57) < 1e-9;
+      const onNorthLeg = Math.abs(p.lng - 88.401) < 1e-9;
+      expect(onEastLeg || onNorthLeg).toBe(true);
+    }
+  });
+
   it("has no car before the first point", () => {
     const { result } = render(null);
     run(100);

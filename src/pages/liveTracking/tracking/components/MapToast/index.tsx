@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   CarFront,
   CircleCheck,
+  CircleDot,
   MapPin,
   Navigation2,
   Scan,
@@ -19,6 +20,8 @@ const ICONS = {
   view: Scan,
   // Trip steps.
   enroute: CarFront,
+  /** The car entered the geofence around the pickup / drop-off. */
+  nearby: CircleDot,
   arrived: MapPin,
   onboard: UserCheck,
   completed: CircleCheck,

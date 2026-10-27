@@ -32,6 +32,8 @@ describe("sampleTrack", () => {
       position: { lat: 22.57, lng: 88.4 },
       movingHeading: null,
       standingUntil: T0,
+      index: 0,
+      t: 0,
     });
   });
 
@@ -40,6 +42,8 @@ describe("sampleTrack", () => {
     expect(sample.position.lat).toBeCloseTo(22.57025, 8);
     expect(sample.movingHeading).toBeCloseTo(0, 5); // north
     expect(sample.standingUntil).toBeNull();
+    expect(sample.index).toBe(0);
+    expect(sample.t).toBeCloseTo(0.25, 8);
   });
 
   it("waits on the newest point once caught up", () => {
@@ -47,6 +51,8 @@ describe("sampleTrack", () => {
       position: { lat: 22.571, lng: 88.4 },
       movingHeading: null,
       standingUntil: null,
+      index: track.length - 1,
+      t: 0,
     });
   });
 

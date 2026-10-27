@@ -17,3 +17,10 @@ export type CameraMode = "journey" | "follow" | "route" | "free";
 export const ROUTE_STROKE_COLOR = "#1d1e23";
 
 export const ROUTE_STROKE_WEIGHT = 5;
+
+/** A light border under the route line: it stays crisp over roads and buildings. */
+export const ROUTE_CASING_COLOR = "#ffffff";
+
+export const ROUTE_CASING_WEIGHT = 9;
+
+export const GEOFENCE_COLOR = "#2e9d5f";
