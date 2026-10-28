@@ -20,15 +20,15 @@ const bannerText = (
 ): { title: string; detail: string } => {
   switch (status) {
     case "ENROUTE":
-      return { title: "Driver on the way", detail: `Pickup - ${timeLeft} away` };
+      return { title: "Driver on the way", detail: `Pickup ${timeLeft} away` };
     case "ARRIVED":
       return { title: "Your driver has arrived", detail: "Waiting at the pickup" };
     case "COMPLETED":
       return { title: "You've arrived", detail: dropoffLocation };
     case "NOSHOW":
-      return { title: "Trip ended", detail: "Passenger no-show" };
+      return { title: "Trip ended", detail: "Passenger no show" };
     default:
-      return { title: "Almost there!", detail: `${dropoffLocation} - ${timeLeft} away` };
+      return { title: "Almost there!", detail: `${dropoffLocation} ${timeLeft} away` };
   }
 };
 

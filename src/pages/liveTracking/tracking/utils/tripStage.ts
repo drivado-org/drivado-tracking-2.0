@@ -12,7 +12,7 @@ export const destinationLabel = (status: DriverStatus | null): string | null => 
     case "ARRIVED":
       return "ARRIVED";
     case "POB":
-      return "DROP-OFF";
+      return "DROP OFF";
     case "COMPLETED":
       return "COMPLETED";
     default:
@@ -27,7 +27,7 @@ export const isPickupLeg = (status: DriverStatus | null) =>
 /** Where the route ends, for the camera toasts. */
 export const destinationName = (status: DriverStatus | null): string => {
   if (status === "ENROUTE" || status === "ARRIVED") return "pickup";
-  if (status === "POB" || status === "COMPLETED") return "drop-off";
+  if (status === "POB" || status === "COMPLETED") return "drop off";
   return "destination";
 };
 
@@ -43,11 +43,11 @@ export const statusNotice = (status: DriverStatus | null): MapNotice | null => {
     case "ARRIVED":
       return { text: "Driver has arrived at the pickup", icon: "arrived", long: true };
     case "POB":
-      return { text: "Passenger on board — heading to the drop-off", icon: "onboard", long: true };
+      return { text: "Passenger on board heading to the drop off", icon: "onboard", long: true };
     case "COMPLETED":
-      return { text: "Arrived at the drop-off — trip completed", icon: "completed", long: true };
+      return { text: "Arrived at the drop off trip completed", icon: "completed", long: true };
     case "NOSHOW":
-      return { text: "Trip ended — passenger no-show", icon: "noshow", long: true };
+      return { text: "Trip ended passenger no show", icon: "noshow", long: true };
     default:
       return null;
   }

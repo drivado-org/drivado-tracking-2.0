@@ -13,29 +13,29 @@ vi.mock("@vis.gl/react-google-maps", () => ({
 
 describe("DestinationMarker", () => {
   it("renders nothing without a position", () => {
-    const { container } = render(<DestinationMarker position={null} label="DROP-OFF" />);
+    const { container } = render(<DestinationMarker position={null} label="DROP OFF" />);
     expect(container).toBeEmptyDOMElement();
   });
 
   it("marks the end of the route with its label", () => {
     const position = { lat: 22.58, lng: 88.45 };
-    render(<DestinationMarker position={position} label="DROP-OFF" />);
+    render(<DestinationMarker position={position} label="DROP OFF" />);
 
     const marker = screen.getByTestId("destination");
     expect(JSON.parse(marker.dataset.position!)).toEqual(position);
-    expect(marker).toHaveAttribute("title", "DROP-OFF");
-    expect(screen.getByText("DROP-OFF")).toBeInTheDocument();
+    expect(marker).toHaveAttribute("title", "DROP OFF");
+    expect(screen.getByText("DROP OFF")).toBeInTheDocument();
   });
 
   it("draws only the dot without a label", () => {
     render(<DestinationMarker position={{ lat: 22.58, lng: 88.45 }} />);
 
     expect(screen.getByTestId("destination")).toHaveTextContent("");
-    expect(screen.queryByText("DROP-OFF")).not.toBeInTheDocument();
+    expect(screen.queryByText("DROP OFF")).not.toBeInTheDocument();
   });
 
   it("draws the dot, not a pin, by default", () => {
-    render(<DestinationMarker position={{ lat: 22.58, lng: 88.45 }} label="DROP-OFF" />);
+    render(<DestinationMarker position={{ lat: 22.58, lng: 88.45 }} label="DROP OFF" />);
 
     expect(screen.queryByTestId("pickup-pin")).not.toBeInTheDocument();
   });
