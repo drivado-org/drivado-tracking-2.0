@@ -22,7 +22,8 @@ const lengthUpTo = (path: LatLng[], index: number): number =>
   path
     .slice(1, index + 1)
     .reduce(
-      (sum, p, i) => sum + distance(toPosition(path[i]), toPosition(p), { units: "meters" }),
+      (sum, p, i) =>
+        sum + distance(toPosition(path[i]), toPosition(p), { units: "meters" }),
       0,
     );
 
@@ -47,7 +48,10 @@ export const matchToRoute = (
   return {
     // Turf counts segments from the start of `ahead`, not of `path`. At the route's very end
     // it returns the last vertex's index, one past the last segment.
-    segmentIndex: Math.min(start + nearest.properties.segmentIndex, path.length - 2),
+    segmentIndex: Math.min(
+      start + nearest.properties.segmentIndex,
+      path.length - 2,
+    ),
     point: { lat, lng },
     distanceMeters: nearest.properties.pointDistance,
     // lineDistance counts from the start of `ahead`: add the segments before it.
@@ -79,7 +83,11 @@ export const remainingRoute = (
   fromIndex = 0,
 ): RemainingRoute => {
   const start = Math.min(Math.max(0, fromIndex), Math.max(0, path.length - 2));
-  const untouched = { points: path.slice(start), segmentIndex: start, snapped: null };
+  const untouched = {
+    points: path.slice(start),
+    segmentIndex: start,
+    snapped: null,
+  };
   if (!position) return untouched;
 
   const match = matchToRoute(path, position, start);
