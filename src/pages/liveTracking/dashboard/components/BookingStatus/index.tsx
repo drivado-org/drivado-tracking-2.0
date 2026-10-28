@@ -47,25 +47,15 @@ const BookingStatus = ({ statuses }: BookingStatusProps) => {
           return (
             <div
               key={`line-${status.label}`}
-              className="absolute h-0.5 rounded-full bg-[#d9dcdf]"
+              className={`absolute h-0.5 rounded-full ${
+                status.completed ? "bg-[#159447]" : "bg-[#d9dcdf]"
+              }`}
               style={{
                 top: "8px",
                 left: `${((index + 0.5) / statuses.length) * 100}%`,
                 width: `${100 / statuses.length}%`,
               }}
-            >
-              <div
-                className="h-full rounded-full bg-[#159447] transition-[width] duration-700 ease-linear"
-                style={{
-                  width:
-                    status.completed || statuses[index + 1]?.completed
-                      ? "100%"
-                      : index === activeIndex
-                        ? `${progress}%`
-                        : "0%",
-                }}
-              />
-            </div>
+            />
           );
         })}
 
@@ -77,21 +67,27 @@ const BookingStatus = ({ statuses }: BookingStatusProps) => {
           >
             <div
               className={`flex h-4.5 w-4.5 items-center justify-center rounded-full transition-colors duration-500 ${
+                // status.completed
+                //   ? "bg-[#159447]"
+                //   : status.active
+                //     ? "bg-green-100"
+                //     : "border-2 border-[#d9dcdf] bg-white"
+
                 status.completed
                   ? "bg-[#159447]"
-                  : status.active
-                    ? "bg-green-100"
-                    : "border-2 border-[#d9dcdf] bg-white"
+                  : "border-2 border-[#d9dcdf] bg-white"
               }`}
             >
-              {status.completed ? (
-                <Check
-                  size={11}
-                  strokeWidth={3}
-                  className="animate-in zoom-in text-white duration-300"
-                />
+              {/* {status.completed ? (
+                <Check size={11} strokeWidth={3} className="text-white" />
               ) : status.active ? (
-                <span className="h-2 w-2 rounded-full bg-[#159447] animate-pulse" />
+                <span className="h-2 w-2 rounded-full bg-gray-400" />
+              ) : (
+                <span className="h-2 w-2 rounded-full bg-gray-400" />
+              )} */}
+
+              {status.completed ? (
+                <Check size={11} strokeWidth={3} className="text-white" />
               ) : (
                 <span className="h-2 w-2 rounded-full bg-gray-400" />
               )}
