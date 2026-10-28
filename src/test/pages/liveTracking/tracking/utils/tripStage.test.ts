@@ -9,7 +9,7 @@ describe("tripStage", () => {
   it("names the drop-off only once the passenger is on board", () => {
     expect(destinationLabel("ENROUTE")).toBe("PICKUP");
     expect(destinationLabel("ARRIVED")).toBe("ARRIVED");
-    expect(destinationLabel("POB")).toBe("DROP-OFF");
+    expect(destinationLabel("POB")).toBe("DROP OFF");
     expect(destinationLabel("COMPLETED")).toBe("COMPLETED");
     expect(destinationLabel(null)).toBeNull();
     expect(destinationLabel("NOSHOW")).toBeNull();

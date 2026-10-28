@@ -1,26 +1,23 @@
 import axios from "axios";
-// import { env } from "@/config/env";
+import { env } from "@/config/env";
 import type { TrackingActionPayload } from "@/types/tracking";
+
+export const buildTripStreamUrl = (tripId: string): string => {
+  const baseUrl = env.trackingApiBaseUrl ?? "";
+
+  return `${baseUrl}/realtime/realtime/trips/${encodeURIComponent(tripId)}/stream`;
+};
 
 export const trackingAction = async (
   payload: TrackingActionPayload,
   signal?: AbortSignal,
 ) => {
-  // const baseUrl = env.trackingApiBaseUrl ?? "";
+  const url = buildTripStreamUrl(payload.tripID);
 
-  const trackingApi = axios.create({
-    baseURL: import.meta.env.VITE_TRACKING_API_BASE_URL,
+  return axios.get<ReadableStream<Uint8Array>>(url, {
+    headers: { Accept: "text/event-stream" },
+    adapter: "fetch",
+    responseType: "stream",
+    signal,
   });
-
-  const response = await trackingApi.get<ReadableStream<Uint8Array>>(
-    `/realtime/realtime/trips/${encodeURIComponent(payload.tripID)}/stream`,
-    {
-      headers: { Accept: "text/event-stream" },
-      adapter: "fetch",
-      responseType: "stream",
-      signal,
-    },
-  );
-
-  return response;
 };

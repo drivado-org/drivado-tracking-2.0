@@ -9,5 +9,4 @@ export const TRACKING_EVENTS = {
   status: "status",
 } as const;
 
-/** What the parser reports for a message without an `event:` line (SSE default). */
 export const DEFAULT_SSE_EVENT = "message";

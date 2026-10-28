@@ -293,7 +293,7 @@ describe("MapCamera", () => {
 
       expect(onModeChange).toHaveBeenCalledWith("follow");
       expect(onNotice).toHaveBeenCalledWith({
-        text: "Approaching drop-off — following the vehicle",
+        text: "Approaching drop off following the vehicle",
         icon: "lock",
       });
 
