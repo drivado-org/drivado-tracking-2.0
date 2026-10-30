@@ -1,8 +1,17 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { DriverData, TrackingEventType } from "@/types/liveBooking";
+
+import type {
+  BookingDetails,
+  BookingMetricsData,
+  DriverData,
+  TrackingEventType,
+} from "@/types/liveBooking";
 
 interface LiveBookingState {
+  bookingDetails: BookingDetails | null;
   driver: DriverData | null;
+  bookingMetrics: BookingMetricsData | null;
+
   loading: boolean;
   error: string | null;
 
@@ -11,7 +20,10 @@ interface LiveBookingState {
 }
 
 const initialState: LiveBookingState = {
+  bookingDetails: null,
   driver: null,
+  bookingMetrics: null,
+
   loading: false,
   error: null,
 
@@ -22,19 +34,29 @@ const initialState: LiveBookingState = {
 const liveBookingSlice = createSlice({
   name: "liveBooking",
   initialState,
+
   reducers: {
-    getDriverDetailsRequest: (state) => {
+    getBookingDetailsRequest: (state, _action: PayloadAction<string>) => {
       state.loading = true;
       state.error = null;
     },
 
-    getDriverDetailsSuccess: (state, action: PayloadAction<DriverData>) => {
-      console.log("Success payload:", action.payload);
+    getBookingDetailsSuccess: (
+      state,
+      action: PayloadAction<{
+        bookingDetails: BookingDetails;
+        driver: DriverData;
+        bookingMetrics: BookingMetricsData;
+      }>,
+    ) => {
       state.loading = false;
-      state.driver = action.payload;
+
+      state.bookingDetails = action.payload.bookingDetails;
+      state.driver = action.payload.driver;
+      state.bookingMetrics = action.payload.bookingMetrics;
     },
 
-    getDriverDetailsFailure: (state, action: PayloadAction<string>) => {
+    getBookingDetailsFailure: (state, action: PayloadAction<string>) => {
       state.loading = false;
       state.error = action.payload;
     },
@@ -61,9 +83,9 @@ const liveBookingSlice = createSlice({
 });
 
 export const {
-  getDriverDetailsRequest,
-  getDriverDetailsSuccess,
-  getDriverDetailsFailure,
+  getBookingDetailsRequest,
+  getBookingDetailsSuccess,
+  getBookingDetailsFailure,
   trackingEventReceived,
   trackingConnectionChanged,
   clearTrackingEvents,

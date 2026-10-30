@@ -1,5 +1,4 @@
-import type { DriverData } from "@/types/liveBooking";
-
+import type { BookingDetailsResponse } from "@/types/liveBooking";
 import axios from "axios";
 
 const api = axios.create({
@@ -8,32 +7,24 @@ const api = axios.create({
 
 export default api;
 
-export const getDriverDetailsApi = async (): Promise<DriverData> => {
-  // Mock API delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
+export const getBookingDetailsApi = async (
+  tripId: string,
+): Promise<BookingDetailsResponse> => {
+  const response = await api.get<BookingDetailsResponse>(
+    "/bookings/getTrackingBookingDetailsByTripId",
+    {
+      params: {
+        tripId,
+      },
+      headers: {
+        "x-api-key": import.meta.env.VITE_TRACKING_API_KEY,
+      },
+    },
+  );
 
-  // Mock Data
-  return {
-    driverName: "Manav Singh Yadav",
-    rating: 4.97,
-    trips: 1284,
-    vehicleRegistration: "LX24 RVD",
-  };
+  if (!response.data.success) {
+    throw new Error(response.data.message ?? "Failed to fetch booking details");
+  }
+
+  return response.data;
 };
-
-// For actual API call
-// import axios from "axios";
-// import type { DriverData } from "@/types/liveBooking";
-
-// export const getDriverDetailsApi = async (): Promise<DriverData> => {
-//   try {
-//     const response = await axios.get(
-//       `${import.meta.env.VITE_BASE_URL}/driver/details`,
-//     );
-
-//     return response.data;
-//   } catch (error) {
-//     console.error("GET DRIVER DETAILS API ERROR:", error);
-//     throw error;
-//   }
-// };

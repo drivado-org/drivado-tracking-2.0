@@ -1,8 +1,9 @@
 export interface DriverData {
   driverName: string;
-  rating: number;
-  trips: number;
-  vehicleRegistration: string;
+  driverContact: string;
+  vehicleRegNo: string;
+  rating?: number;
+  trips?: number;
 }
 
 export interface BookingStatusData {
@@ -11,13 +12,59 @@ export interface BookingStatusData {
   completed: boolean;
   active: boolean;
 }
+
+export interface BookingIdData {
+  bookingId: string;
+  vehicleType: string;
+}
+
+// Booking information used by the dashboard
+export interface BookingDetails {
+  bookingId: string;
+  vehicleType: string;
+  pickUpName: string;
+  dropOffName: string;
+  passengerName: string;
+  passengers: number;
+  luggage: number;
+  flightNo: string;
+}
+
+// API response structure
+export interface BookingDetailsResponse {
+  success: boolean;
+  data: {
+    bookingId: string;
+    vehicleType: string;
+    driverName: string;
+    driverContact: string;
+    vehicleRegNo: string;
+    pickUpName: string;
+    dropOffName: string;
+    distance: number;
+    duration: string;
+    passengerName: string;
+    passengers: number;
+    luggage: number;
+    flightNo: string;
+  };
+  message?: string;
+}
+
+// Initial booking metrics from backend
+export interface BookingMetricsData {
+  distance: number;
+  duration: string;
+}
+
+// Live metrics from SSE
 export interface TripMetricsData {
   duration: number | null;
   distance: number | null;
   dropOffTime: string | null;
 }
+
 export interface CompletedTripData {
-  driverName: string;
   vehicleType: string;
   bookingId: string;
   duration: number;

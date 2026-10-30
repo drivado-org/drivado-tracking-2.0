@@ -1,10 +1,6 @@
 import { Button } from "@/components/ui/button";
+import type { BookingIdData } from "@/types/liveBooking";
 import { CarFront, Share2 } from "lucide-react";
-
-export interface BookingIdData {
-  bookingId: string;
-  vehicleType: string;
-}
 
 interface BookingIdProps {
   booking: BookingIdData;

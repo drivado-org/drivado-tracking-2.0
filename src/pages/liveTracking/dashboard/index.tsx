@@ -3,16 +3,20 @@ import DriverDetails from "./components/DriverDetails";
 import TripMetrics from "./components/TripMetrics";
 import JourneyDetails, { type JourneyData } from "./components/JourneyDetails";
 import BookingDetails, { type BookingData } from "./components/BookingDetails";
-import BookingId, { type BookingIdData } from "./components/BookingId";
-import { useEffect, useState } from "react";
+import BookingId from "./components/BookingId";
+import { useState } from "react";
 import DashboardHeader from "./components/DashboardHeader";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import type { RootState } from "@/store";
-import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
+// import { getDriverDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
 import { selectEta } from "@/store/route/routeSlice";
 import { selectDriverStatus } from "@/store/tracking/trackingSlice";
 import { formatClockTime, toEtaMinutes, toKilometres } from "@/utils/etaFormat";
-import type { BookingStatusData, TripMetricsData } from "@/types/liveBooking";
+import type {
+  BookingIdData,
+  BookingStatusData,
+  TripMetricsData,
+} from "@/types/liveBooking";
 
 const statusSteps = [
   { label: "Enroute", value: "ENROUTE" },
@@ -35,6 +39,7 @@ const getBookingStatuses = (driverStatus?: string): BookingStatusData[] => {
 
 interface LiveTrackingDashboardProps {
   onExpandedChange: (expanded: boolean) => void;
+  // tripId: string;
 }
 
 const LiveTrackingDashboard = ({
@@ -50,10 +55,10 @@ const LiveTrackingDashboard = ({
     });
   };
 
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
   const eta = useSelector(selectEta);
 
-  const { driver, sseConnected } = useSelector(
+  const { driver, sseConnected, bookingDetails, bookingMetrics } = useSelector(
     (state: RootState) => state.liveBooking,
   );
 
@@ -87,33 +92,34 @@ const LiveTrackingDashboard = ({
   console.log("Booking statuses:", statuses);
   console.log("Current driver status:", driverStatus);
 
-  useEffect(() => {
-    dispatch(getDriverDetailsRequest());
-  }, [dispatch]);
+  // useEffect(() => {
+  //   dispatch(getDriverDetailsRequest());
+  // }, [dispatch]);
 
   const bookingData: BookingData = {
-    passengerName: "Priya Sharma",
-    companyName: "Meridian Capital",
-    passengers: 2,
-    luggage: 3,
-    flight: "BA 142",
+    passengerName: bookingDetails?.passengerName ?? "",
+    companyName: "",
+    passengers: bookingDetails?.passengers ?? 0,
+    luggage: bookingDetails?.luggage ?? 0,
+    flightNo: bookingDetails?.flightNo ?? "",
   };
 
   const journeyData: JourneyData = {
-    distance: "12.5 km",
+    distance: bookingMetrics ? `${bookingMetrics.distance} km` : "--",
+    duration: bookingMetrics ? `${bookingMetrics.duration} min` : "--",
     pickup: {
-      pickupLocation: "Heathrow T5 · Arrivals",
-      address: "123 Main Street, New York, NY 10001",
+      pickupLocation: bookingDetails?.pickUpName ?? "--",
+      address: "",
     },
     dropoff: {
-      dropoffLocation: "The Savoy",
-      address: "456 Oak Avenue, Los Angeles, CA 90001",
+      dropoffLocation: bookingDetails?.dropOffName ?? "--",
+      address: "",
     },
   };
 
   const bookingIdData: BookingIdData = {
-    bookingId: "D0923-L-QRTKVM",
-    vehicleType: "Standard Sedan",
+    bookingId: bookingDetails?.bookingId ?? "",
+    vehicleType: bookingDetails?.vehicleType ?? "",
   };
 
   // From the stream's `eta` events; "--" until the first one.
