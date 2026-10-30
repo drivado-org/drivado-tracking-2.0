@@ -12,7 +12,7 @@ export interface BookingData {
   companyName: string;
   passengers: number;
   luggage: number;
-  flight: string;
+  flightNo: string;
 }
 
 interface BookingDetailsProps {
@@ -20,7 +20,7 @@ interface BookingDetailsProps {
 }
 
 const BookingDetails = ({ booking }: BookingDetailsProps) => {
-  const { passengerName, companyName, passengers, luggage, flight } = booking;
+  const { passengerName, companyName, passengers, luggage, flightNo } = booking;
 
   const initials = passengerName
     .split(" ")
@@ -95,7 +95,7 @@ const BookingDetails = ({ booking }: BookingDetailsProps) => {
               <span className="text-[13px] text-[#707583]">Flight</span>
 
               <span className="text-[13px] font-medium text-[#25262b]">
-                {flight}
+                {flightNo}
               </span>
             </div>
 

@@ -1,11 +1,12 @@
-import type { CompletedTripData } from "@/types/liveBooking";
+import type { CompletedTripData, DriverData } from "@/types/liveBooking";
 
 interface CompletedDriverCardProps {
   trip: CompletedTripData;
+  driver: DriverData;
 }
 
-const CompletedDriverCard = ({ trip }: CompletedDriverCardProps) => {
-  const name = trip.driverName.trim();
+const CompletedDriverCard = ({ trip, driver }: CompletedDriverCardProps) => {
+  const name = driver.driverName.trim();
 
   const initials =
     name.split(/\s+/).length > 1
@@ -21,7 +22,7 @@ const CompletedDriverCard = ({ trip }: CompletedDriverCardProps) => {
 
         <div className="min-w-0 text-left">
           <p className="truncate text-sm font-semibold text-gray-900">
-            {trip.driverName}
+            {driver.driverName}
           </p>
           <p className="truncate text-xs text-gray-500">{trip.vehicleType}</p>
         </div>

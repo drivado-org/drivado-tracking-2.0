@@ -7,6 +7,7 @@ import {
 
 export interface JourneyData {
   distance: string;
+  duration: string;
   pickup: {
     pickupLocation: string;
     address: string;
@@ -22,7 +23,7 @@ interface JourneyDetailsProps {
 }
 
 const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
-  const { distance, pickup, dropoff } = journey;
+  const { distance, duration, pickup, dropoff } = journey;
 
   return (
     <Accordion
@@ -95,7 +96,7 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
                 Est. duration
               </span>
 
-              <p className="text-[13px] font-bold text-slate-800">55 min</p>
+              <p className="text-[13px] font-bold text-slate-800">{duration}</p>
             </div>
           </div>
         </AccordionContent>

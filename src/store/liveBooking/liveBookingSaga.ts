@@ -1,32 +1,61 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 
-import { getDriverDetailsApi } from "@/server/api/liveBookingApi";
-import type { DriverData } from "@/types/liveBooking";
+import { getBookingDetailsApi } from "@/server/api/liveBookingApi";
+import type { BookingDetailsResponse } from "@/types/liveBooking";
 
 import {
-  getDriverDetailsRequest,
-  getDriverDetailsSuccess,
-  getDriverDetailsFailure,
+  getBookingDetailsRequest,
+  getBookingDetailsSuccess,
+  getBookingDetailsFailure,
 } from "./liveBookingSlice";
 
-function* getDriverDetailsSaga() {
+function* getBookingDetailsSaga(
+  action: ReturnType<typeof getBookingDetailsRequest>,
+) {
   try {
-    const response: DriverData = yield call(getDriverDetailsApi);
+    const response: BookingDetailsResponse = yield call(
+      getBookingDetailsApi,
+      action.payload,
+    );
 
     console.log("Saga response:", response);
 
-    yield put(getDriverDetailsSuccess(response));
+    const data = response.data;
+
+    yield put(
+      getBookingDetailsSuccess({
+        bookingDetails: {
+          bookingId: data?.bookingId,
+          vehicleType: data?.vehicleType,
+          pickUpName: data.pickUpName,
+          dropOffName: data.dropOffName,
+          passengerName: data.passengerName,
+          passengers: data.passengers,
+          luggage: data.luggage,
+          flightNo: data.flightNo,
+        },
+        driver: {
+          driverName: data.driverName,
+          driverContact: data.driverContact,
+          vehicleRegNo: data.vehicleRegNo,
+        },
+        bookingMetrics: {
+          distance: data.distance,
+          duration: data.duration,
+        },
+      }),
+    );
   } catch (error) {
     yield put(
-      getDriverDetailsFailure(
+      getBookingDetailsFailure(
         error instanceof Error
           ? error.message
-          : "Failed to fetch driver details",
+          : "Failed to fetch booking details",
       ),
     );
   }
 }
 
 export function* watchLiveBookingAsync() {
-  yield takeLatest(getDriverDetailsRequest.type, getDriverDetailsSaga);
+  yield takeLatest(getBookingDetailsRequest.type, getBookingDetailsSaga);
 }

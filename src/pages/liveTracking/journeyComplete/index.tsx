@@ -2,12 +2,14 @@ import { useState } from "react";
 
 import type {
   CompletedTripData,
+  DriverData,
   //   FeedbackTag,
   JourneyFeedback,
 } from "@/types/liveBooking";
 
 interface JourneyCompleteProps {
   trip: CompletedTripData;
+  driver: DriverData;
   onSubmitFeedback: (feedback: JourneyFeedback) => void;
   onSkip: () => void;
 }
@@ -22,6 +24,7 @@ import FeedbackActions from "@/pages/liveTracking/journeyComplete/components/Fee
 
 const JourneyComplete = ({
   trip,
+  driver,
   onSubmitFeedback,
   onSkip,
 }: JourneyCompleteProps) => {
@@ -53,7 +56,7 @@ const JourneyComplete = ({
           duration={trip.duration}
         />
 
-        <CompletedDriverCard trip={trip} />
+        <CompletedDriverCard trip={trip} driver={driver} />
 
         <JourneyRating rating={rating} onChange={setRating} />
 
@@ -62,7 +65,7 @@ const JourneyComplete = ({
         <FeedbackNote
           note={note}
           onChange={setNote}
-          driverName={trip.driverName}
+          driverName={driver.driverName}
         />
 
         <FeedbackActions

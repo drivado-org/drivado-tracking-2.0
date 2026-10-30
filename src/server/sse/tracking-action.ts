@@ -5,7 +5,7 @@ import type { TrackingActionPayload } from "@/types/tracking";
 export const buildTripStreamUrl = (tripId: string): string => {
   const baseUrl = env.trackingApiBaseUrl ?? "";
 
-  return `${baseUrl}/realtime/realtime/trips/${encodeURIComponent(tripId)}/stream`;
+  return `${baseUrl}/realtime/trips/${encodeURIComponent(tripId)}/stream`;
 };
 
 export const trackingAction = async (
