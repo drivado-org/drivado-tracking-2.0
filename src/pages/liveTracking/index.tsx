@@ -47,11 +47,7 @@ interface TrackingMapProps {
   timeLeft?: string;
 }
 
-const LiveTracking = ({
-  isJourneyCompleted = true,
-  dropoffLocation = "The Savoy",
-  timeLeft = "1 min",
-}: TrackingMapProps) => {
+const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
   const [showNotification, setShowNotification] = useState(isJourneyCompleted);
   const [isDashboardExpanded, setIsDashboardExpanded] = useState(false);
   const [showJourneyComplete, setShowJourneyComplete] = useState(false);
@@ -71,9 +67,13 @@ const LiveTracking = ({
   );
 
   const eta = useAppSelector(selectEta);
-  const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : timeLeft;
+  const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : "";
   const status = useAppSelector(selectDriverStatus);
-  const banner = bannerText(status, dropoffLocation, etaTimeLeft);
+  const banner = bannerText(
+    status,
+    bookingDetails?.dropOffName ?? "",
+    etaTimeLeft,
+  );
 
   // Temporary sample data. I will Replace with actual completed trip data.
   const completedTrip = {
@@ -83,7 +83,7 @@ const LiveTracking = ({
     dropoffLocation: bookingDetails?.dropOffName ?? "",
     vehicleType: bookingDetails?.vehicleType ?? "",
     bookingId: bookingDetails?.bookingId ?? "",
-    bookingLabel: "Booking",
+    // bookingLabel: "Booking",
   };
 
   return (
@@ -143,13 +143,13 @@ const LiveTracking = ({
         />
       </div>
       {/* TEMPORARY TEST BUTTON */}
-      <button
+      {/* <button
         type="button"
         onClick={() => setShowJourneyComplete(true)}
         className="absolute bottom-4 right-20 z-60 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-lg hover:bg-emerald-800"
       >
         Test Completed Modal
-      </button>
+      </button> */}
     </div>
   );
 };
