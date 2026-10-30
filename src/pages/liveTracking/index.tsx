@@ -86,6 +86,12 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
     // bookingLabel: "Booking",
   };
 
+  useEffect(() => {
+    if (status === "COMPLETED") {
+      setShowJourneyComplete(true);
+    }
+  }, [status]);
+
   return (
     <div className="relative flex h-dvh w-full overflow-hidden flex-col md:flex-row bg-slate-100">
       {/* TRACKING MAP */}
