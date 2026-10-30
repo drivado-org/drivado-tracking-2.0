@@ -1,37 +1,11 @@
 import type { BookingStatusData } from "@/types/liveBooking";
 import { Check } from "lucide-react";
-import { useEffect, useState } from "react";
 
 interface BookingStatusProps {
   statuses: BookingStatusData[];
 }
 
 const BookingStatus = ({ statuses }: BookingStatusProps) => {
-  const [progress, setProgress] = useState(0);
-
-  const activeIndex = statuses.findIndex(
-    (status) => status.active && !status.completed,
-  );
-
-  useEffect(() => {
-    setProgress(0);
-
-    if (activeIndex === -1) return;
-
-    const interval = window.setInterval(() => {
-      setProgress((previous) => {
-        if (previous >= 90) {
-          window.clearInterval(interval);
-          return 90;
-        }
-
-        return Math.min(previous + 1, 90);
-      });
-    }, 2000);
-
-    return () => window.clearInterval(interval);
-  }, [activeIndex]);
-
   return (
     <div className="mx-2 shrink-0 px-1 py-4">
       <div

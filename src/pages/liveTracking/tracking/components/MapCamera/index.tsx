@@ -92,7 +92,7 @@ const MapCamera = ({
   route,
   dropOff,
   approaching = false,
-  destinationName = "drop-off",
+  destinationName = "drop off",
   topInset = 0,
   onModeChange,
   onNotice,
@@ -261,7 +261,7 @@ const MapCamera = ({
           autoRef.current = { start: now, from: current, zoom: FOLLOW_ZOOM };
           setMode("follow");
           callbacksRef.current.onNotice?.({
-            text: `Approaching ${destinationName} — following the vehicle`,
+            text: `Approaching ${destinationName} following the vehicle`,
             icon: "lock",
           });
         }

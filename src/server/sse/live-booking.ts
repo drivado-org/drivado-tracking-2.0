@@ -1,18 +1,12 @@
 import type { TrackingEvent, TrackingEventType } from "@/types/liveBooking";
+import { buildTripStreamUrl } from "./tracking-action";
 
 export const createLiveTrackingConnection = (
-  tripID: string,
+  tripId: string,
   onEvent: (event: TrackingEvent) => void,
   onError?: () => void,
 ): (() => void) => {
-  const baseUrl = (import.meta.env.VITE_TRACKING_API_BASE_URL ?? "").replace(
-    /\/+$/,
-    "",
-  );
-
-  const url = `${baseUrl}/realtime/realtime/trips/${encodeURIComponent(tripID)}/stream`;
-
-  const eventSource = new EventSource(url);
+  const eventSource = new EventSource(buildTripStreamUrl(tripId));
 
   const eventTypes: TrackingEventType[] = [
     "snapshot",

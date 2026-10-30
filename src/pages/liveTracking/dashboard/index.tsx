@@ -14,8 +14,6 @@ import { selectDriverStatus } from "@/store/tracking/trackingSlice";
 import { formatClockTime, toEtaMinutes, toKilometres } from "@/utils/etaFormat";
 import type { BookingStatusData, TripMetricsData } from "@/types/liveBooking";
 
-type DriverStatus = "ENROUTE" | "ARRIVED" | "POB" | "COMPLETED" | "NOSHOW";
-
 const statusSteps = [
   { label: "Enroute", value: "ENROUTE" },
   { label: "Arrived", value: "ARRIVED" },
