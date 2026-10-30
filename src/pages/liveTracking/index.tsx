@@ -77,8 +77,8 @@ const LiveTracking = ({
 
   // Temporary sample data. I will Replace with actual completed trip data.
   const completedTrip = {
-    duration: eta ? toEtaMinutes(eta.etaSeconds) : 55,
-    distance: eta ? eta.distanceMeters / 1000 : 34.6,
+    duration: eta ? toEtaMinutes(eta.etaSeconds) : 0,
+    distance: eta ? eta.distanceMeters / 1000 : 0,
     // dropoffLocation,
     dropoffLocation: bookingDetails?.dropOffName ?? "",
     vehicleType: bookingDetails?.vehicleType ?? "",
