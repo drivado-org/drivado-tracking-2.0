@@ -2,6 +2,7 @@ import {
   isEtaPending,
   parseEtaEvent,
   parseRouteChange,
+  parseTripSnapshot,
   parseVehicleMeta,
 } from "@/validators/tripEventPayload";
 
@@ -138,5 +139,71 @@ describe("parseVehicleMeta (TripVehicleMeta)", () => {
     ["string bearing", { ...valid, bearing: "90" }],
   ])("rejects %s", (_label, raw) => {
     expect(parseVehicleMeta(raw)).toBeNull();
+  });
+});
+
+describe("parseTripSnapshot (TripSnapshot)", () => {
+  const minimal = { ...BASE, driverStatus: "ENROUTE" };
+  const location = { lat: 22.5757, lng: 88.4264, timestamp: "2026-11-02T05:33:53.452Z" };
+
+  it("reads the exact snapshot the backend sends", () => {
+    expect(
+      parseTripSnapshot(
+        '{"bookingID":"D0726-28641","tripID":"T01a19aba041673cb815fc84a3c0b48fe","driverID":"663b2f36e420aa532c2a98f6","tripType":"TRIP_S","driverStatus":"ENROUTE","location":{"lat":22.57575355505634,"lng":88.42640291543987,"timestamp":"2026-11-02T05:33:53.452Z"}}',
+      ),
+    ).toEqual({
+      bookingID: "D0726-28641",
+      tripID: "T01a19aba041673cb815fc84a3c0b48fe",
+      driverID: "663b2f36e420aa532c2a98f6",
+      tripType: "TRIP_S",
+      driverStatus: "ENROUTE",
+      location: {
+        lat: 22.57575355505634,
+        lng: 88.42640291543987,
+        timestamp: "2026-11-02T05:33:53.452Z",
+      },
+    });
+  });
+
+  it("reads every optional field", () => {
+    expect(
+      parseTripSnapshot({ ...minimal, location, eta: 300, distance: 1500.5, route: PATH, bearing: 90 }),
+    ).toEqual({ ...minimal, location, eta: 300, distance: 1500.5, route: PATH, bearing: 90 });
+  });
+
+  it("is valid before any source reports", () => {
+    expect(parseTripSnapshot(minimal)).toEqual(minimal);
+  });
+
+  it("keeps 0 as a real value", () => {
+    expect(parseTripSnapshot({ ...minimal, eta: 0, distance: 0, bearing: 0 })).toEqual({
+      ...minimal,
+      eta: 0,
+      distance: 0,
+      bearing: 0,
+    });
+  });
+
+  it.each<Case>([
+    ["0,0 location", { location: { ...location, lat: 0, lng: 0 } }],
+    ["location without timestamp", { location: { lat: 22.5, lng: 88.4 } }],
+    ["fractional eta", { eta: 1.5 }],
+    ["negative distance", { distance: -1 }],
+    ["one-point route", { route: [PATH[0]] }],
+    ["route with a bad point", { route: [PATH[0], { lat: 91, lng: 88 }] }],
+    ["bearing 360", { bearing: 360 }],
+    ["string bearing", { bearing: "90" }],
+  ])("drops %s and keeps the rest", (_label, extra) => {
+    expect(parseTripSnapshot({ ...minimal, eta: 60, ...extra })).toEqual(
+      "eta" in extra ? minimal : { ...minimal, eta: 60 },
+    );
+  });
+
+  it.each<Case>([
+    ...BAD_BASES.map(([label, raw]): Case => [label, { ...raw, driverStatus: "ENROUTE" }]),
+    ["no driverStatus", BASE],
+    ["unknown driverStatus", { ...BASE, driverStatus: "PARKED" }],
+  ])("rejects %s", (_label, raw) => {
+    expect(parseTripSnapshot(raw)).toBeNull();
   });
 });

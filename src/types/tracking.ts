@@ -1,4 +1,4 @@
-import type { TrackPoint } from "./geo";
+import type { LatLng, TrackPoint } from "./geo";
 
 export type TripType = "TRIP_S" | "TRIP_D";
 
@@ -30,6 +30,28 @@ export interface LocationUpdate {
   lng: number;
   /** ISO string. */
   timestamp: string;
+}
+
+/**
+ * `event: snapshot`: the trip's full state, sent once when the stream connects.
+ * Optional fields are absent until the source first reports. 0 is a real value.
+ */
+export interface TripSnapshot {
+  bookingID: string;
+  /** UUIDv7, same for both legs. */
+  tripID: string;
+  driverID: string;
+  tripType: TripType;
+  driverStatus: DriverStatus;
+  location?: TrackPoint;
+  /** Seconds remaining (integer). */
+  eta?: number;
+  /** Meters remaining. */
+  distance?: number;
+  /** At least 2 points. */
+  route?: LatLng[];
+  /** Degrees clockwise from north, 0–359. */
+  bearing?: number;
 }
 
 export interface TrackingActionPayload {

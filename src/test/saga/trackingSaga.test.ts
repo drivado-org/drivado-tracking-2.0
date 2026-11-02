@@ -317,6 +317,58 @@ describe("trackingSaga", () => {
     });
   });
 
+  it("fills location, ETA, route and bearing from the connect snapshot", async () => {
+    const stream = fakeStream();
+    const store = await startWith(stream.response);
+    const route = [
+      { lat: 22.5757, lng: 88.4264 },
+      { lat: 22.5726, lng: 88.4197 },
+    ];
+
+    stream.sendEvent({
+      ...payload({ lat: 22.5757, lng: 88.4264 }),
+      eta: 0,
+      distance: 820,
+      route,
+      bearing: 0,
+    });
+    await settle();
+
+    const { tracking, route: routeState } = store.getState();
+    expect(tracking.points.at(-1)).toMatchObject({ lat: 22.5757, lng: 88.4264 });
+    expect(tracking.driverStatus).toBe("ENROUTE");
+    // 0 is real: "arriving now" and "facing north".
+    expect(routeState.eta).toMatchObject({ etaSeconds: 0, distanceMeters: 820 });
+    expect(routeState.route?.routePath).toEqual(route);
+    expect(routeState.vehicleMeta).toMatchObject({ bearing: 0, reroute: false });
+  });
+
+  it("keeps the status from a snapshot without a location", async () => {
+    const stream = fakeStream();
+    const store = await startWith(stream.response);
+
+    stream.sendEvent({ ...payload(), location: undefined, driverStatus: "ARRIVED" });
+    await settle();
+
+    expect(store.getState().tracking.points).toEqual([]);
+    expect(store.getState().tracking.driverStatus).toBe("ARRIVED");
+    expect(store.getState().route.eta).toBeNull();
+  });
+
+  it("ignores a snapshot for another trip", async () => {
+    const stream = fakeStream();
+    const store = await startWith(stream.response);
+
+    stream.sendEvent(payload({ tripID: "T999" }));
+    await settle();
+
+    expect(store.getState().tracking.points).toEqual([]);
+    expect(console.warn).toHaveBeenCalledWith(
+      "TRACKING snapshot for another trip ignored:",
+      "T999",
+    );
+  });
+
   it("moves the car to the newest point of a { data: [...] } batch", async () => {
     const stream = fakeStream();
     const store = await startWith(stream.response);
