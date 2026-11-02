@@ -159,7 +159,7 @@ const LiveTrackingDashboard = ({
   // ];
 
   return (
-    <div className="relative flex h-95 md:h-full min-h-0 w-full flex-col bg-white">
+    <div className="relative flex h-95 min-h-0 w-full flex-col bg-white md:h-full md:overflow-hidden">
       {/* Mobile Header */}
       <DashboardHeader
         isExpanded={isDetailsExpanded}
@@ -170,7 +170,8 @@ const LiveTrackingDashboard = ({
       {/* Dashboard Content */}
       <div
         className={`
-          order-2 flex min-h-0 w-full flex-col md:order-1 md:h-full md:w-95 md:min-w-95 md:shrink-0
+          order-2 flex min-h-0 w-full flex-col
+    md:order-1 md:h-full md:min-h-0 md:w-95 md:min-w-95 md:shrink-0
           ${isDetailsExpanded ? "h-[85%]" : "h-[48%]"}
         `}
       >
@@ -179,11 +180,10 @@ const LiveTrackingDashboard = ({
         <BookingStatus statuses={statuses} />
         {driver && <DriverDetails driver={driver} />}
         <div
-          className={`
-            min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
-            ${isDetailsExpanded ? "block max-h-85" : "hidden"}
-            md:block md:max-h-85 overflow-auto
-          `}
+          className={`min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
+    ${isDetailsExpanded ? "block max-h-75" : "hidden"}
+    md:block md:max-h-none md:flex-1 md:overflow-y-auto
+                    `}
         >
           <JourneyDetails journey={journeyData} />
           <BookingDetails booking={bookingData} />

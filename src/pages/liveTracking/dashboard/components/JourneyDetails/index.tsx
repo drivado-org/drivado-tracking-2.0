@@ -36,7 +36,7 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
         value="journey"
         className="rounded-2xl border-0 bg-white px-4 shadow-sm"
       >
-        <AccordionTrigger className="py-3 text-left hover:no-underline">
+        <AccordionTrigger className="py-2 text-left hover:no-underline">
           <div className="flex w-full items-center justify-between gap-3 pr-2">
             <h2 className="text-sm font-semibold text-slate-800">
               Journey details
@@ -58,14 +58,14 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
                 <span className="relative z-10 mt-0.5 h-2.5 w-2.5 rounded-full border-2 border-slate-800 bg-white" />
               </div>
 
-              <div className="pb-4">
+              <div className="pb-2 md:pb-1">
                 <p className="text-xs font-medium text-slate-500">Pickup</p>
 
-                <p className="mt-1 text-sm font-semibold leading-5 text-slate-800">
+                <p className="mt-1 text-sm font-normal leading-5 text-slate-800 md:leading-4">
                   {pickup.pickupLocation}
                 </p>
 
-                <p className="text-xs leading-5 text-slate-500">
+                <p className="wrap-break-word text-xs leading-5 text-slate-500 md:leading-4">
                   {pickup.address}
                 </p>
               </div>
@@ -80,18 +80,18 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
               <div>
                 <p className="text-xs font-medium text-slate-500">Drop-off</p>
 
-                <p className="mt-1 text-sm font-semibold leading-5 text-slate-800">
+                <p className="mt-1 text-sm font-normal leading-5 text-slate-800 md:leading-4">
                   {dropoff.dropoffLocation}
                 </p>
 
-                <p className="text-xs leading-5 text-slate-500">
+                <p className="wrap-break-word text-xs leading-5 text-slate-500 md:leading-4">
                   {dropoff.address}
                 </p>
               </div>
             </div>
 
             {/* Estimated duration */}
-            <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-2">
+            <div className="mt-3 flex items-center justify-between border-t border-slate-200 pt-2 md:mt-2">
               <span className="text-xs font-medium text-slate-500">
                 Est. duration
               </span>

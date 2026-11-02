@@ -9,7 +9,6 @@ interface DriverDetailsProps {
 const DriverDetails = ({ driver }: DriverDetailsProps) => {
   const { driverName, rating, trips, vehicleRegNo } = driver;
 
-  // Calculate driver initials
   const name = driverName.trim();
 
   const initials =

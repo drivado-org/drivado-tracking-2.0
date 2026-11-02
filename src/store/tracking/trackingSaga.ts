@@ -10,7 +10,11 @@ import {
 import { createSseParser } from "@/server/sse/sseParser";
 import { trackingAction } from "@/server/sse/tracking-action";
 import { TRACKING_EVENTS } from "@/server/sse/trackingEvents";
-import type { DriverStatus, TrackingActionPayload } from "@/types/tracking";
+import type {
+  DriverStatus,
+  TrackingActionPayload,
+  TripSnapshot,
+} from "@/types/tracking";
 import { isTripFinished } from "@/utils/tripStatus";
 import type { TripEventBase } from "@/types/route";
 import {
@@ -21,6 +25,7 @@ import {
   isEtaPending,
   parseEtaEvent,
   parseRouteChange,
+  parseTripSnapshot,
   parseVehicleMeta,
 } from "@/validators/tripEventPayload";
 import {
@@ -76,6 +81,10 @@ const createStreamChannel = (
     };
   }, buffers.expanding<StreamEvent>());
 
+/** Same trip whatever the case / spaces the URL uses (t146 vs T146). */
+const isSameTrip = (a: string, b: string) =>
+  a.trim().toUpperCase() === b.trim().toUpperCase();
+
 /** Parses an eta / route_change / vehicle_meta event; null for another trip or a bad payload. */
 const readTripEvent = <T extends TripEventBase>(
   parse: (raw: unknown) => T | null,
@@ -88,13 +97,41 @@ const readTripEvent = <T extends TripEventBase>(
     console.warn(`TRACKING invalid ${name} ignored:`, data);
     return null;
   }
-  // Same trip whatever the case / spaces the URL uses (t146 vs T146).
-  if (parsed.tripID.trim().toUpperCase() !== tripID.trim().toUpperCase()) {
+  if (!isSameTrip(parsed.tripID, tripID)) {
     console.warn(`TRACKING ${name} for another trip ignored:`, parsed.tripID);
     return null;
   }
   return parsed;
 };
+
+/** Splits the connect snapshot into the actions the live events use; later events overwrite them. */
+function* applySnapshot(snapshot: TripSnapshot) {
+  const { location, eta, distance, route, bearing, ...trip } = snapshot;
+
+  if (location) {
+    yield put(trackingUpdate({ ...trip, ...location, sequence: null }));
+  } else {
+    // No GPS fix yet: keep the status, the car appears with the first location event.
+    yield put(trackingStatusUpdate(trip.driverStatus));
+  }
+
+  if (eta !== undefined && distance !== undefined) {
+    yield put(
+      etaUpdate({
+        ...trip,
+        etaSeconds: eta,
+        distanceMeters: distance,
+        arrivalTime: new Date(Date.now() + eta * 1000).toISOString(),
+      }),
+    );
+  }
+
+  if (route) yield put(routeChanged({ ...trip, routePath: route }));
+
+  if (bearing !== undefined) {
+    yield put(vehicleMetaUpdate({ ...trip, reroute: false, bearing }));
+  }
+}
 
 type ConnectionResult = {
   /** Trip finished (COMPLETED / NOSHOW): don't reconnect. */
@@ -158,6 +195,32 @@ function* streamTripOnce(action: PayloadAction<TrackingActionPayload>) {
 
       const tripID = action.payload.tripID;
       let tripEvent: { driverStatus: DriverStatus | null } | null = null;
+
+      // -----------------------------------------------
+      // Snapshot on connect: location, ETA, route and bearing at once
+      // -----------------------------------------------
+
+      // A payload that isn't a full snapshot falls through to the location parser below.
+      const snapshot =
+        event.event === TRACKING_EVENTS.snapshot ? parseTripSnapshot(event.data) : null;
+
+      if (snapshot) {
+        if (!isSameTrip(snapshot.tripID, tripID)) {
+          console.warn("TRACKING snapshot for another trip ignored:", snapshot.tripID);
+          continue;
+        }
+
+        yield call(applySnapshot, snapshot);
+        if (snapshot.location) result.receivedLocation = true;
+
+        if (isTripFinished(snapshot.driverStatus)) {
+          console.log("TRACKING ended:", snapshot.driverStatus);
+          yield put(trackingDisconnected());
+          result.ended = true;
+          return result;
+        }
+        continue;
+      }
 
       if (event.event === TRACKING_EVENTS.eta) {
         const eta = readTripEvent(parseEtaEvent, event.event, event.data, tripID);
