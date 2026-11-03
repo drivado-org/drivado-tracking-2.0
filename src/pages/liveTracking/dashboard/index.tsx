@@ -58,7 +58,7 @@ const LiveTrackingDashboard = ({
   // const dispatch = useDispatch();
   const eta = useSelector(selectEta);
 
-  const { driver, sseConnected, bookingDetails, bookingMetrics } = useSelector(
+  const { driver, bookingDetails, bookingMetrics } = useSelector(
     (state: RootState) => state.liveBooking,
   );
 
@@ -85,12 +85,12 @@ const LiveTrackingDashboard = ({
 
   const statuses = getBookingStatuses(driverStatus ?? undefined);
 
-  console.log("SSE connected:", sseConnected);
+  // console.log("SSE connected:", sseConnected);
   // console.log("ETA event:", etaEvent);
   // console.log("Route change event:", routeEvent);
-  console.log("Driver status:", driverStatus);
-  console.log("Booking statuses:", statuses);
-  console.log("Current driver status:", driverStatus);
+  // console.log("Driver status:", driverStatus);
+  // console.log("Booking statuses:", statuses);
+  // console.log("Current driver status:", driverStatus);
 
   // useEffect(() => {
   //   dispatch(getDriverDetailsRequest());
@@ -106,7 +106,7 @@ const LiveTrackingDashboard = ({
 
   const journeyData: JourneyData = {
     distance: bookingMetrics ? `${bookingMetrics.distance} km` : "--",
-    duration: bookingMetrics ? `${bookingMetrics.duration} min` : "--",
+    duration: bookingMetrics ? `${bookingMetrics.duration}` : "--",
     pickup: {
       pickupLocation: bookingDetails?.pickUpName ?? "--",
       address: "",
@@ -124,9 +124,9 @@ const LiveTrackingDashboard = ({
 
   // From the stream's `eta` events; "--" until the first one.
   const tripMetricsData: TripMetricsData = {
-    duration: eta ? toEtaMinutes(eta.etaSeconds) : null,
-    distance: eta ? toKilometres(eta.distanceMeters) : null,
-    dropOffTime: eta ? formatClockTime(eta.arrivalTime) : null,
+    duration: eta ? toEtaMinutes(eta?.etaSeconds) : null,
+    distance: eta ? toKilometres(eta?.distanceMeters) : null,
+    dropOffTime: eta ? formatClockTime(eta?.arrivalTime) : null,
   };
 
   // const bookingStatuses: BookingStatusData[] = [
@@ -159,7 +159,7 @@ const LiveTrackingDashboard = ({
   // ];
 
   return (
-    <div className="relative flex h-95 min-h-0 w-full flex-col bg-white md:h-full md:overflow-hidden">
+    <div className="relative flex h-95 min-h-0 w-full flex-col bg-white md:h-full">
       {/* Mobile Header */}
       <DashboardHeader
         isExpanded={isDetailsExpanded}
@@ -181,7 +181,7 @@ const LiveTrackingDashboard = ({
         {driver && <DriverDetails driver={driver} />}
         <div
           className={`min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
-    ${isDetailsExpanded ? "block max-h-75" : "hidden"}
+    ${isDetailsExpanded ? "block max-h-65 xs:max-h-90 sm:max-h-75" : "hidden"}
     md:block md:max-h-none md:flex-1 md:overflow-y-auto
                     `}
         >

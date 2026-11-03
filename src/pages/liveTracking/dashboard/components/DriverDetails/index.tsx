@@ -1,6 +1,6 @@
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import type { DriverData } from "@/types/liveBooking";
-import { Dot, MessageCircle } from "lucide-react";
+import { Dot } from "lucide-react";
 
 interface DriverDetailsProps {
   driver: DriverData;
@@ -20,7 +20,7 @@ const DriverDetails = ({ driver }: DriverDetailsProps) => {
     <section className="mx-4 mb-4 rounded-2xl bg-[#f7f4f5] px-3 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900">
+          <div className="flex w-7 h-7 xs:h-11 xs:w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900">
             <span className="text-sm font-semibold text-white">{initials}</span>
           </div>
 
@@ -52,7 +52,7 @@ const DriverDetails = ({ driver }: DriverDetailsProps) => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <Button
             type="button"
             aria-label="Message driver"
@@ -60,10 +60,10 @@ const DriverDetails = ({ driver }: DriverDetailsProps) => {
           >
             <MessageCircle className="h-4 w-4" />
           </Button>
-        </div>
+        </div> */}
       </div>
 
-      <div className="my-3 border-t border-slate-200" />
+      <div className="mt-2 mb-1 border-t border-slate-200" />
 
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-slate-500">
