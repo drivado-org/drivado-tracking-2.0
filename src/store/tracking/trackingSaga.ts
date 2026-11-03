@@ -7,6 +7,11 @@ import {
   RECONNECT_BASE_DELAY_MS,
   RECONNECT_MAX_DELAY_MS,
 } from "@/pages/liveTracking/tracking/constants/tracking";
+import {
+  createEventSourceChannel,
+  isEventSourceSupported,
+  type StreamEvent,
+} from "@/server/sse/eventSourceChannel";
 import { createSseParser } from "@/server/sse/sseParser";
 import { trackingAction } from "@/server/sse/tracking-action";
 import { TRACKING_EVENTS } from "@/server/sse/trackingEvents";
@@ -43,11 +48,6 @@ import {
   trackingStatusUpdate,
   trackingUpdate,
 } from "@/store/tracking/trackingSlice";
-
-type StreamEvent =
-  | { type: "MESSAGE"; data: string; event: string }
-  | { type: "CLOSED" }
-  | { type: "ERROR"; error: unknown };
 
 const createStreamChannel = (
   body: ReadableStream<Uint8Array>,
@@ -140,6 +140,40 @@ type ConnectionResult = {
   receivedLocation: boolean;
 };
 
+/** Fallback for browsers without EventSource: reads the stream through fetch. null on failure. */
+function* openFetchStream(
+  action: PayloadAction<TrackingActionPayload>,
+  signal: AbortSignal,
+) {
+  const response: AxiosResponse<ReadableStream<Uint8Array>> = yield call(
+    trackingAction,
+    action.payload,
+    signal,
+  );
+
+  console.log("TRACKING Response:", response?.status);
+
+  if (response?.status !== 200 || !response.data) {
+    // =======================================================
+    // API FAILED
+    // =======================================================
+
+    const message =
+      response?.status === 200
+        ? "Tracking SSE stream is not available"
+        : `Tracking API failed with status ${response?.status}`;
+
+    console.error("TRACKING failed:", message);
+    yield put(trackingError(message));
+    return null;
+  }
+
+  yield put(trackingConnected());
+
+  const channel: EventChannel<StreamEvent> = yield call(createStreamChannel, response.data);
+  return channel;
+}
+
 /** One SSE connection, from request until the stream ends, fails or the trip finishes. */
 function* streamTripOnce(action: PayloadAction<TrackingActionPayload>) {
   const controller = new AbortController();
@@ -149,35 +183,21 @@ function* streamTripOnce(action: PayloadAction<TrackingActionPayload>) {
   try {
     console.log("TRACKING Payload:", { tripID: action.payload.tripID });
 
-    const response: AxiosResponse<ReadableStream<Uint8Array>> = yield call(
-      trackingAction,
-      action.payload,
-      controller.signal,
-    );
-
-    console.log("TRACKING Response:", response?.status);
-
-    if (response?.status !== 200 || !response.data) {
-      // =======================================================
-      // API FAILED
-      // =======================================================
-
-      const message =
-        response?.status === 200
-          ? "Tracking SSE stream is not available"
-          : `Tracking API failed with status ${response?.status}`;
-
-      console.error("TRACKING failed:", message);
-      yield put(trackingError(message));
-      return result;
+    if (isEventSourceSupported()) {
+      // trackingConnected waits for the OPEN event.
+      channel = yield call(createEventSourceChannel, action.payload.tripID);
+    } else {
+      channel = yield* openFetchStream(action, controller.signal);
+      if (!channel) return result;
     }
-
-    yield put(trackingConnected());
-
-    channel = yield call(createStreamChannel, response.data);
 
     while (true) {
       const event: StreamEvent = yield take(channel!);
+
+      if (event.type === "OPEN") {
+        yield put(trackingConnected());
+        continue;
+      }
 
       if (event.type === "CLOSED") {
         console.warn("TRACKING stream closed by server");

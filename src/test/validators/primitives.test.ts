@@ -83,6 +83,25 @@ describe("toTimestampMs", () => {
     );
   });
 
+  // Formats Chrome accepts but Safari's Date.parse rejects: rewritten to strict ISO first.
+  it.each([
+    ["2026-10-08 12:32:55Z", Date.UTC(2026, 9, 8, 12, 32, 55)],
+    ["2026-10-08T12:32:55.404759Z", Date.UTC(2026, 9, 8, 12, 32, 55, 404)],
+    ["2026-10-08T12:32:55.4Z", Date.UTC(2026, 9, 8, 12, 32, 55, 400)],
+    ["2026-10-08T12:32:55+0000", Date.UTC(2026, 9, 8, 12, 32, 55)],
+    ["2026-10-08T18:02:55+0530", Date.UTC(2026, 9, 8, 12, 32, 55)],
+    ["2026-10-08 12:32:55 UTC", Date.UTC(2026, 9, 8, 12, 32, 55)],
+    [" 2026-10-08T12:32:55Z ", Date.UTC(2026, 9, 8, 12, 32, 55)],
+  ])("parses %p the same in every browser", (input, expected) => {
+    expect(toTimestampMs(input)).toBe(expected);
+  });
+
+  it("reads a date without a zone as local time", () => {
+    expect(toTimestampMs("2026-10-08 12:32:55")).toBe(
+      new Date(2026, 9, 8, 12, 32, 55).getTime(),
+    );
+  });
+
   it.each([
     undefined,
     null,
