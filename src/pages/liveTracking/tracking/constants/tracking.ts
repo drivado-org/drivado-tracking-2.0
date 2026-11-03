@@ -110,8 +110,8 @@ export const GEOFENCE_RADIUS_METERS = 100;
 /** The car leaves the area only this far past its edge: GPS drift at the edge doesn't flicker it. */
 export const GEOFENCE_EXIT_MARGIN_METERS = 15;
 
-/** The area is drawn, and the camera zooms in further, only once the car is this close. */
-export const GEOFENCE_SHOW_METERS = 300;
+/** The area is drawn, and the camera zooms in further, only once the car is inside it. */
+export const GEOFENCE_SHOW_METERS = GEOFENCE_RADIUS_METERS;
 
 /** Near the pickup / drop-off the journey view may zoom in this far, and the lock zooms in to it. */
 export const APPROACH_ZOOM = 18;
