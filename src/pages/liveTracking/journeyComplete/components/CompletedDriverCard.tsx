@@ -21,7 +21,7 @@ const CompletedDriverCard = ({ trip, driver }: CompletedDriverCardProps) => {
         </div>
 
         <div className="min-w-0 text-left">
-          <p className="truncate text-sm font-semibold text-gray-900">
+          <p className="capitalize w-36 xs:w-40 md:w-60 truncate text-sm font-semibold text-gray-900">
             {driver.driverName}
           </p>
           <p className="truncate text-xs text-gray-500">{trip.vehicleType}</p>

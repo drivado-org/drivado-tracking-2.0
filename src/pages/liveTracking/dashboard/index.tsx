@@ -184,6 +184,10 @@ const LiveTrackingDashboard = ({
     ${isDetailsExpanded ? "block max-h-65 xs:max-h-90 sm:max-h-75" : "hidden"}
     md:block md:max-h-none md:flex-1 md:overflow-y-auto
                     `}
+          style={{
+            WebkitOverflowScrolling: "touch",
+            touchAction: "pan-y",
+          }}
         >
           <JourneyDetails journey={journeyData} />
           <BookingDetails booking={bookingData} />
