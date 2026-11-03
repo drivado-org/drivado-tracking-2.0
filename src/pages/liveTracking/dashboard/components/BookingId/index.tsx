@@ -10,9 +10,9 @@ interface BookingIdProps {
 const BookingId = ({ booking, onShare }: BookingIdProps) => {
   const { bookingId, vehicleType } = booking;
   return (
-    <div className="flex items-center justify-between border-b border-t border-[#eee9ea] py-4 mx-4">
+    <div className="flex items-center justify-between border-b border-t border-[#eee9ea] py-2 xs:py-4 md:py-2 mx-4">
       <div className="text-left">
-        <h2 className="text-sm font-semibold leading-5 text-[#111318]">
+        <h2 className="text-xs xs:text-sm font-semibold leading-5 text-[#111318]">
           {bookingId}
         </h2>
 

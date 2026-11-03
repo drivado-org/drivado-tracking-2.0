@@ -25,6 +25,10 @@ interface JourneyDetailsProps {
 const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
   const { distance, duration, pickup, dropoff } = journey;
 
+  const formattedDistance = Number.isFinite(Number.parseFloat(distance))
+    ? `${Number.parseFloat(distance).toFixed(2)} km`
+    : "--";
+
   return (
     <Accordion
       type="single"
@@ -34,7 +38,7 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
     >
       <AccordionItem
         value="journey"
-        className="rounded-2xl border-0 bg-white px-4 shadow-sm"
+        className="rounded-2xl border-0 bg-white px-4 py-0.5 shadow-sm"
       >
         <AccordionTrigger className="py-2 text-left hover:no-underline">
           <div className="flex w-full items-center justify-between gap-3 pr-2">
@@ -43,7 +47,7 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
             </h2>
 
             <span className="text-xs font-medium text-slate-500">
-              {distance}
+              {formattedDistance}
             </span>
           </div>
         </AccordionTrigger>
@@ -61,11 +65,11 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
               <div className="pb-2 md:pb-1">
                 <p className="text-xs font-medium text-slate-500">Pickup</p>
 
-                <p className="mt-1 text-sm font-normal leading-5 text-slate-800 md:leading-4">
+                <p className="mt-1 text-xs md:text-[13px] font-normal xs:leading-5 text-slate-800 md:leading-4.5">
                   {pickup.pickupLocation}
                 </p>
 
-                <p className="wrap-break-word text-xs leading-5 text-slate-500 md:leading-4">
+                <p className="wrap-break-word text-xs leading-5 text-slate-500 md:leading-4.5">
                   {pickup.address}
                 </p>
               </div>
@@ -80,11 +84,11 @@ const JourneyDetails = ({ journey }: JourneyDetailsProps) => {
               <div>
                 <p className="text-xs font-medium text-slate-500">Drop-off</p>
 
-                <p className="mt-1 text-sm font-normal leading-5 text-slate-800 md:leading-4">
+                <p className="mt-1 text-xs md:text-[13px] font-normal xs:leading-5 text-slate-800 md:leading-4.5">
                   {dropoff.dropoffLocation}
                 </p>
 
-                <p className="wrap-break-word text-xs leading-5 text-slate-500 md:leading-4">
+                <p className="wrap-break-word text-xs leading-5 text-slate-500 md:leading-4.5">
                   {dropoff.address}
                 </p>
               </div>

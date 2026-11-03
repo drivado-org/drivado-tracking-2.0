@@ -1,11 +1,11 @@
-import { BriefcaseBusiness, Headphones, User } from "lucide-react";
+import { BriefcaseBusiness, User } from "lucide-react";
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 
 export interface BookingData {
   passengerName: string;
@@ -33,22 +33,22 @@ const BookingDetails = ({ booking }: BookingDetailsProps) => {
     <Accordion type="single" collapsible className="mx-4 mt-2">
       <AccordionItem
         value="booking"
-        className="rounded-2xl border-0 bg-white px-4 py-1 shadow-sm"
+        className="rounded-2xl border-0 bg-white px-4 py-0.5 shadow-sm"
       >
-        <AccordionTrigger className="py-2.5 text-left hover:no-underline">
-          <h2 className="text-sm font-semibold text-slate-800">Your booking</h2>
+        <AccordionTrigger className="py-2 text-left hover:no-underline">
+          <h2 className="text-sm font-semibold text-slate-800">Pax details</h2>
         </AccordionTrigger>
 
         <AccordionContent>
           <div>
             {/* Passenger details */}
-            <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#e4e1e4] bg-[#f8f6f7] text-[13px] font-medium text-[#25262b]">
+            <div className="mb-2 xs:mb-4 flex items-center gap-3">
+              <div className="hidden xs:flex w-6 h-6 xs:h-9 xs:w-9 shrink-0 items-center justify-center rounded-full border border-[#e4e1e4] bg-[#f8f6f7] text-[11px] xs:text-[13px] font-bold xs:font-medium text-[#25262b]">
                 {initials}
               </div>
 
               <div className="text-left">
-                <p className="text-[14px] font-semibold leading-5 text-[#22242a]">
+                <p className="text-[14px] font-semibold leading-4 xs:leading-5 text-[#22242a] capitalize">
                   {passengerName}
                 </p>
 
@@ -91,7 +91,7 @@ const BookingDetails = ({ booking }: BookingDetailsProps) => {
             {/* Flight details */}
             <div className="mb-2 border-t border-[#e8e5e6]" />
 
-            <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center justify-between">
               <span className="text-[13px] text-[#707583]">Flight</span>
 
               <span className="text-[13px] font-medium text-[#25262b]">
@@ -100,13 +100,13 @@ const BookingDetails = ({ booking }: BookingDetailsProps) => {
             </div>
 
             {/* Contact support */}
-            <Button
+            {/* <Button
               type="button"
-              className="flex h-11.25 w-full items-center justify-center gap-2 rounded-xl bg-[#101216] text-[14px] font-semibold text-white transition hover:bg-[#1d1f24] cursor-pointer"
+              className="mt-2 flex h-11.25 w-full items-center justify-center gap-2 rounded-xl bg-[#101216] text-[14px] font-semibold text-white transition hover:bg-[#1d1f24] cursor-pointer"
             >
               <Headphones size={16} strokeWidth={2} />
               <span>Contact support</span>
-            </Button>
+            </Button> */}
           </div>
         </AccordionContent>
       </AccordionItem>
