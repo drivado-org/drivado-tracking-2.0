@@ -58,7 +58,7 @@ const TripMetrics = ({ metrics }: TripMetricsProps) => {
         <div className="pl-4 text-left">
           <p className="text-xs font-medium text-slate-500">Drop-off</p>
 
-          <div className="mt-1">
+          <div className="mt-1 flex items-baseline gap-1">
             <span className="text-sm xs:text-[22px] font-semibold leading-none text-slate-900">
               {dropOffTime ?? "--"}
             </span>
