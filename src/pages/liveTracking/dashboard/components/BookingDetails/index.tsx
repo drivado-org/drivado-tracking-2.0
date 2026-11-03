@@ -48,7 +48,7 @@ const BookingDetails = ({ booking }: BookingDetailsProps) => {
               </div>
 
               <div className="text-left">
-                <p className="text-[14px] font-semibold leading-4 xs:leading-5 text-[#22242a] capitalize">
+                <p className="w-48 xs:w-60 truncate text-[14px] font-semibold leading-4 xs:leading-5 text-[#22242a] capitalize">
                   {passengerName}
                 </p>
 

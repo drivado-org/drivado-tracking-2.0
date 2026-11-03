@@ -25,7 +25,7 @@ const DriverDetails = ({ driver }: DriverDetailsProps) => {
           </div>
 
           <div className="text-left">
-            <p className="w-40 truncate text-sm font-semibold leading-5 text-slate-800 capitalize">
+            <p className="w-48 xs:w-60 truncate text-sm font-semibold leading-5 text-slate-800 capitalize">
               {driverName}
             </p>
 
