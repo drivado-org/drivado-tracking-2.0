@@ -13,9 +13,11 @@ class FakeEventSource extends EventTarget {
   onopen: (() => void) | null = null;
   onerror: (() => void) | null = null;
   closed = false;
+  url: string;
 
-  constructor(public url: string) {
+  constructor(url: string) {
     super();
+    this.url = url;
     FakeEventSource.instances.push(this);
   }
 
