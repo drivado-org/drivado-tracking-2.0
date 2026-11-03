@@ -207,7 +207,8 @@ const MapCamera = ({
 
     const div = map.getDiv();
     const onZoomByHand = (event: Event) => {
-      if (event instanceof TouchEvent && event.touches.length < 2) return;
+      // Not `instanceof TouchEvent`: desktop Safari has no TouchEvent, so that throws.
+      if (event.type === "touchstart" && (event as TouchEvent).touches.length < 2) return;
       if (latestRef.current.mode === "journey") setMode("free");
     };
     const options = { capture: true, passive: true };
