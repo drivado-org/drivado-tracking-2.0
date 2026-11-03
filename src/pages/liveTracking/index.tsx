@@ -92,6 +92,16 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
     }
   }, [status]);
 
+  useEffect(() => {
+    if (!showNotification) return;
+
+    const timer = setTimeout(() => {
+      setShowNotification(false);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [showNotification]);
+
   return (
     <div className="relative flex h-dvh w-full overflow-hidden flex-col md:flex-row bg-slate-100">
       {/* TRACKING MAP */}
@@ -116,14 +126,14 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
               </p>
             </div>
 
-            <Button
+            {/* <Button
               type="button"
               onClick={() => setShowNotification(false)}
               aria-label="Close journey notification"
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2b2b2d] text-emerald-50 transition-colors hover:bg-[#39393a] cursor-pointer"
             >
               <X className="h-4 w-4" />
-            </Button>
+            </Button> */}
           </div>
         )}
 

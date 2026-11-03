@@ -7,7 +7,7 @@ interface BookingStatusProps {
 
 const BookingStatus = ({ statuses }: BookingStatusProps) => {
   return (
-    <div className="mx-2 shrink-0 px-1 py-4">
+    <div className="mx-2 shrink-0 px-1 pt-3 xs:pt-4 pb-1 xs:pb-2 md:py-3">
       <div
         className="relative grid w-full"
         style={{

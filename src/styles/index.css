@@ -232,9 +232,9 @@ code {
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-/* @theme {
-  --breakpoint-2md: 980px;
-} */
+@theme {
+  --breakpoint-xs: 393px;
+}
 
 @layer base {
   * {
