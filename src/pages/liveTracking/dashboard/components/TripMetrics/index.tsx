@@ -37,12 +37,12 @@ const Duration = ({ minutes }: { minutes: number | null }) => {
   if (minutes === null) return <Value value="--" unit="min" />;
 
   const split = splitHours(minutes);
-  if (split.hours === 0) return <Value value={split.minutes} unit="min" />;
+  if (split.hours === 0) return <Value value={split.minutes} unit="mins" />;
 
   return (
     <>
       <Value value={split.hours} unit="hr" />
-      {split.minutes > 0 && <Value value={split.minutes} unit="min" />}
+      {split.minutes > 0 && <Value value={split.minutes} unit="mins" />}
     </>
   );
 };
