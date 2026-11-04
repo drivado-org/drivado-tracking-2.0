@@ -85,17 +85,6 @@ const LiveTrackingDashboard = ({
 
   const statuses = getBookingStatuses(driverStatus ?? undefined);
 
-  // console.log("SSE connected:", sseConnected);
-  // console.log("ETA event:", etaEvent);
-  // console.log("Route change event:", routeEvent);
-  // console.log("Driver status:", driverStatus);
-  // console.log("Booking statuses:", statuses);
-  // console.log("Current driver status:", driverStatus);
-
-  // useEffect(() => {
-  //   dispatch(getDriverDetailsRequest());
-  // }, [dispatch]);
-
   const bookingData: BookingData = {
     passengerName: bookingDetails?.passengerName ?? "",
     companyName: "",
@@ -129,35 +118,6 @@ const LiveTrackingDashboard = ({
     dropOffTime: eta ? formatClockTime(eta?.arrivalTime) : null,
   };
 
-  // const bookingStatuses: BookingStatusData[] = [
-  //   {
-  //     label: "Enroute",
-  //     time: "16:44",
-  //     completed: true,
-  //   },
-  //   {
-  //     label: "Arrived",
-  //     time: "17:02",
-  //     completed: true,
-  //   },
-  //   {
-  //     label: "On board",
-  //     time: "17:08",
-  //     completed: true,
-  //   },
-  //   {
-  //     label: "Complete",
-  //     completed: true,
-  //   },
-  // ];
-
-  // const statuses: BookingStatusData[] = [
-  //   { label: "Enroute", completed: false },
-  //   { label: "Arrived", completed: false },
-  //   { label: "On Board", completed: false },
-  //   { label: "Completed", completed: false },
-  // ];
-
   return (
     <div className="relative flex h-95 min-h-0 w-full flex-col bg-white md:h-full">
       {/* Mobile Header */}
@@ -180,10 +140,21 @@ const LiveTrackingDashboard = ({
         <BookingStatus statuses={statuses} />
         {driver && <DriverDetails driver={driver} />}
         <div
+          ref={(el) => {
+            if (el) {
+              console.log("Scroll height:", el.scrollHeight);
+              console.log("Client height:", el.clientHeight);
+              console.log("Can scroll:", el.scrollHeight > el.clientHeight);
+            }
+          }}
           className={`min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
-    ${isDetailsExpanded ? "block max-h-65 xs:max-h-90 sm:max-h-75" : "hidden"}
+    ${isDetailsExpanded ? "block max-h-none xs:max-h-90 sm:max-h-75" : "hidden"}
     md:block md:max-h-none md:flex-1 md:overflow-y-auto
                     `}
+          style={{
+            WebkitOverflowScrolling: "touch",
+            touchAction: "pan-y",
+          }}
         >
           <JourneyDetails journey={journeyData} />
           <BookingDetails booking={bookingData} />

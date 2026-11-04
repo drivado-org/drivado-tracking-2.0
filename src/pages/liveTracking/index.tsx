@@ -2,18 +2,19 @@ import Tracking from "@/pages/liveTracking/tracking/index";
 import LiveTrackingDashboard from "./dashboard";
 import { useEffect, useState } from "react";
 import DIcon from "@/assets/images/d-icon.png";
+// import { X } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { useAppSelector } from "@/redux/hooks";
 import { selectEta } from "@/store/route/routeSlice";
 import { selectDriverStatus } from "@/store/tracking/trackingSlice";
 import type { DriverStatus } from "@/types/tracking";
 import { toEtaMinutes } from "@/utils/etaFormat";
+// import { Button } from "@/components/ui/button";
 import JourneyComplete from "./journeyComplete";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
 import { getBookingDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
 
-/** Banner text for each trip step; the drop-off is only named once the passenger is on board. */
 const bannerText = (
   status: DriverStatus | null,
   dropoffLocation: string,
@@ -73,7 +74,6 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
     etaTimeLeft,
   );
 
-  // Temporary sample data. I will Replace with actual completed trip data.
   const completedTrip = {
     duration: eta ? toEtaMinutes(eta.etaSeconds) : 0,
     distance: eta ? eta.distanceMeters / 1000 : 0,
@@ -102,11 +102,9 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
 
   return (
     <div className="relative flex h-dvh w-full overflow-hidden flex-col md:flex-row bg-slate-100">
-      {/* TRACKING MAP */}
       <div className="relative order-1 h-[52%] min-h-0 w-full shrink-0 overflow-hidden md:order-2 md:h-full md:w-0 md:flex-1">
         <div className="absolute inset-0">
           {tripId && (
-            // The notice covers ~68 px at the top of the map.
             <Tracking tripId={tripId} topInset={showNotification ? 68 : 0} />
           )}
         </div>
@@ -135,7 +133,6 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
           </div>
         )}
 
-        {/* COMPLETED JOURNEY MODAL */}
         {showJourneyComplete && driver && (
           <JourneyComplete
             trip={completedTrip}
@@ -147,7 +144,7 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
           />
         )}
       </div>
-      {/* TRACKING DASHBOARD */}
+
       <div
         className={`absolute bottom-0 left-0 z-20 w-full overflow-visible bg-white transition-[height] duration-300 ease-in-out ${isDashboardExpanded ? "h-[85%]" : "h-[48%]"} md:relative md:bottom-auto md:left-auto md:order-1 md:h-full md:w-95 md:min-w-95 md:shrink-0 md:overflow-hidden`}
       >
