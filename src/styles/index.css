@@ -258,6 +258,7 @@ code {
 
 @theme {
   --breakpoint-xs: 420px;
+  --breakpoint-xxs: 393px;
 }
 
 @layer base {

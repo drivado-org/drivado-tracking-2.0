@@ -148,7 +148,7 @@ const LiveTrackingDashboard = ({
             }
           }}
           className={`custom-scrollbar min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
-    ${isDetailsExpanded ? "block max-h-none xs:max-h-90 sm:max-h-75" : "hidden"}
+    ${isDetailsExpanded ? "block max-h-65 xxs:max-h-none xs:max-h-90 sm:max-h-75" : "hidden"}
     md:block md:max-h-none md:flex-1 md:overflow-y-auto
                     `}
           style={{
