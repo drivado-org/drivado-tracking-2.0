@@ -105,7 +105,7 @@ export const ARRIVAL_MAX_WAIT_MS = 6000;
 // ---- Geofence (see hooks/useGeofence.ts) ----
 
 /** Radius of the area drawn around the pickup / drop-off. */
-export const GEOFENCE_RADIUS_METERS = 100;
+export const GEOFENCE_RADIUS_METERS = 50;
 
 /** The car leaves the area only this far past its edge: GPS drift at the edge doesn't flicker it. */
 export const GEOFENCE_EXIT_MARGIN_METERS = 15;
