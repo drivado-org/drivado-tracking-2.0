@@ -5,6 +5,24 @@ interface TripMetricsProps {
   metrics: TripMetricsData;
 }
 
+const formatDistance = (distance: number | null) => {
+  if (distance === null || !Number.isFinite(distance)) {
+    return { value: "--", unit: "" };
+  }
+
+  if (distance <= 0.5) {
+    return {
+      value: Math.round(distance * 1000),
+      unit: "meters",
+    };
+  }
+
+  return {
+    value: distance.toFixed(2),
+    unit: "km",
+  };
+};
+
 const Value = ({ value, unit }: { value: number | string; unit: string }) => (
   <>
     <span className="text-sm xs:text-[22px] font-semibold leading-none text-slate-900">
@@ -31,6 +49,7 @@ const Duration = ({ minutes }: { minutes: number | null }) => {
 
 const TripMetrics = ({ metrics }: TripMetricsProps) => {
   const { duration, distance, dropOffTime } = metrics;
+  const formattedDistance = formatDistance(distance);
 
   return (
     <section className="relative rounded-t-[24px] bg-white px-5 pb-1 xs:pb-3 pt-7 md:pb-2 md:pt-1.5">
@@ -48,10 +67,13 @@ const TripMetrics = ({ metrics }: TripMetricsProps) => {
 
           <div className="mt-1 flex items-baseline gap-1">
             <span className="text-sm xs:text-[22px] font-semibold leading-none text-slate-900">
-              {distance ?? "--"}
+              {/* {distance ?? "--"} */}
+              {formattedDistance.value}
             </span>
 
-            <span className="text-xs font-medium text-slate-500">km</span>
+            <span className="text-xs font-medium text-slate-500">
+              {formattedDistance.unit}
+            </span>
           </div>
         </div>
 
