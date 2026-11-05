@@ -47,7 +47,7 @@ const LiveTrackingDashboard = ({
 }: LiveTrackingDashboardProps) => {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
-  // -----------Mobile swipe handling-------------
+  // -----------START MOBILE SWIPE HANDLING-------------
   const touchStart = useRef<{
     x: number;
     y: number;
@@ -68,7 +68,6 @@ const LiveTrackingDashboard = ({
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!isMobileScreen()) return;
 
-    // Keep grey handle click independent
     if ((e.target as HTMLElement).closest("button")) return;
 
     const touch = e.touches[0];
@@ -91,7 +90,6 @@ const LiveTrackingDashboard = ({
     const deltaY = touch.clientY - touchStart.current.y;
     const deltaX = touch.clientX - touchStart.current.x;
 
-    // Ignore small movements and horizontal swipes
     if (Math.abs(deltaY) < 50 || Math.abs(deltaY) < Math.abs(deltaX)) {
       touchStart.current = null;
       return;
@@ -104,7 +102,6 @@ const LiveTrackingDashboard = ({
 
     // Swipe DOWN → Collapse dashboard
     else if (deltaY > 50 && isDetailsExpanded) {
-      // Don't collapse if content is scrolled down
       if (scrollContainer.current && scrollContainer.current.scrollTop > 0) {
         touchStart.current = null;
         return;
@@ -115,7 +112,7 @@ const LiveTrackingDashboard = ({
 
     touchStart.current = null;
   };
-  // -------------------------
+  // -------END MOBILE SWIPE HANDLING------------------
 
   // const handleToggle = () => {
   //   setIsDetailsExpanded((prev) => {
