@@ -96,7 +96,7 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
 
     const timer = setTimeout(() => {
       setShowNotification(false);
-    }, 300000);
+    }, 10000);
 
     return () => clearTimeout(timer);
   }, [showNotification]);
