@@ -15,7 +15,7 @@ interface JourneyCompleteProps {
 }
 
 import JourneyCompleteHeader from "@/pages/liveTracking/journeyComplete/components/JourneyCompleteHeader";
-import CompletedTripSummary from "@/pages/liveTracking/journeyComplete/components/CompletedTripSummary";
+// import CompletedTripSummary from "@/pages/liveTracking/journeyComplete/components/CompletedTripSummary";
 import CompletedDriverCard from "@/pages/liveTracking/journeyComplete/components/CompletedDriverCard";
 import JourneyRating from "@/pages/liveTracking/journeyComplete/components/JourneyRating";
 // import FeedbackTags from "./FeedbackTags";
@@ -51,10 +51,10 @@ const JourneyComplete = ({
       <div className="custom-scrollbar my-auto max-h-[95vh] w-full max-w-125 overflow-y-auto rounded-3xl bg-white shadow-2xl px-5 py-6">
         <JourneyCompleteHeader dropoffLocation={trip.dropoffLocation} />
 
-        <CompletedTripSummary
+        {/* <CompletedTripSummary
           distance={trip.distance}
           duration={trip.duration}
-        />
+        /> */}
 
         <CompletedDriverCard trip={trip} driver={driver} />
 

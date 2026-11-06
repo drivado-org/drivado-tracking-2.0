@@ -19,7 +19,7 @@ const bannerText = (
   status: DriverStatus | null,
   dropoffLocation: string,
   timeLeft: string,
-): { title: string; detail: string } => {
+): { title: string; detail: string; left?: string } => {
   switch (status) {
     case "ENROUTE":
       return { title: "Driver on the way", detail: `Pickup ${timeLeft} away` };
@@ -35,7 +35,8 @@ const bannerText = (
     default:
       return {
         title: "Almost there!",
-        detail: `${dropoffLocation} ${timeLeft} away`,
+        detail: `${dropoffLocation}`,
+        left: `${timeLeft} away`,
       };
   }
 };
@@ -95,7 +96,7 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
 
     const timer = setTimeout(() => {
       setShowNotification(false);
-    }, 10000);
+    }, 300000);
 
     return () => clearTimeout(timer);
   }, [showNotification]);
@@ -117,9 +118,14 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
             <div className="min-w-0 flex-1 text-left">
               <p className="text-sm font-bold leading-5">{banner.title}</p>
 
-              <p className="truncate text-xs font-medium text-[#a2a3a7]">
-                {banner.detail}
-              </p>
+              <div className="flex items-center">
+                <p className="w-60 truncate text-xs font-medium text-[#a2a3a7] pr-2">
+                  {banner.detail}
+                </p>
+                <p className="text-xs font-medium text-[#a2a3a7]">
+                  {banner.left}
+                </p>
+              </div>
             </div>
 
             {/* <Button
