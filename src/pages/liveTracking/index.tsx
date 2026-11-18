@@ -89,7 +89,7 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
   };
 
   useEffect(() => {
-    if (status === "COMPLETED") {
+    if (status === "COMPLETED" || status === "NOSHOW") {
       setShowJourneyComplete(true);
     }
   }, [status]);
@@ -146,6 +146,7 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
           <JourneyComplete
             trip={completedTrip}
             driver={driver}
+            isNoShow={status === "NOSHOW"}
             isSubmitting={reviewLoading}
             submitError={reviewError}
             isSubmitted={!!reviewSuccess}

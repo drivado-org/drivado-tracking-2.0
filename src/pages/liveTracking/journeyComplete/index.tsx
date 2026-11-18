@@ -19,6 +19,7 @@ import type {
 interface JourneyCompleteProps {
   trip: CompletedTripData;
   driver: DriverData;
+  isNoShow?: boolean;
   isSubmitting?: boolean;
   submitError?: string | null;
   isSubmitted?: boolean;
@@ -34,6 +35,7 @@ const JourneyComplete = ({
   isSubmitted,
   onSubmitFeedback,
   onSkip,
+  isNoShow = false,
 }: JourneyCompleteProps) => {
   const [rating, setRating] = useState(0);
   //   const [selectedTags, setSelectedTags] = useState<FeedbackTag[]>([]);
@@ -56,9 +58,31 @@ const JourneyComplete = ({
   return (
     <main className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-3">
       <div className="custom-scrollbar my-auto max-h-[95vh] w-full max-w-125 overflow-y-auto rounded-3xl bg-white shadow-2xl px-5 py-6">
-        <JourneyCompleteHeader dropoffLocation={trip.dropoffLocation} />
+        {isNoShow ? (
+          <div className="flex flex-col items-center py-10 text-center">
+            <CheckCircle2
+              size={64}
+              strokeWidth={1.5}
+              className="text-emerald-600"
+            />
 
-        {isSubmitted ? (
+            <h2 className="mt-5 text-xl font-bold text-gray-900">
+              Trip has been marked as No Show
+            </h2>
+
+            <p className="mt-2 max-w-xs text-sm leading-6 text-gray-500">
+              This trip has been marked as no-show. Thank you.
+            </p>
+
+            <button
+              type="button"
+              onClick={onSkip}
+              className="mt-7 w-full cursor-pointer rounded-xl bg-emerald-700 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+            >
+              Done
+            </button>
+          </div>
+        ) : isSubmitted ? (
           <div
             className="flex flex-col items-center py-10 text-center"
             role="status"
@@ -74,7 +98,7 @@ const JourneyComplete = ({
               Thank you for your feedback!
             </h2>
 
-            <p className="mt-2 max-w-xs text-sm leading-6 text-gray-500">
+            <p className="mt-2 max-w-md text-sm leading-6 text-gray-500">
               Your feedback has been submitted successfully. We appreciate you
               taking the time to rate your driver.
             </p>
@@ -89,6 +113,8 @@ const JourneyComplete = ({
           </div>
         ) : (
           <>
+            <JourneyCompleteHeader dropoffLocation={trip.dropoffLocation} />
+
             <CompletedDriverCard trip={trip} driver={driver} />
 
             <JourneyRating rating={rating} onChange={setRating} />
