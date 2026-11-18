@@ -13,7 +13,11 @@ import { toEtaMinutes } from "@/utils/etaFormat";
 import JourneyComplete from "./journeyComplete";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
-import { getBookingDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
+import {
+  getBookingDetailsRequest,
+  submitDriverReviewRequest,
+  clearDriverReview,
+} from "@/store/liveBooking/liveBookingSlice";
 
 const bannerText = (
   status: DriverStatus | null,
@@ -62,9 +66,8 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
       dispatch(getBookingDetailsRequest(tripId));
     }
   }, [dispatch, tripId]);
-  const { driver, bookingDetails } = useSelector(
-    (state: RootState) => state.liveBooking,
-  );
+  const { driver, bookingDetails, reviewLoading, reviewError, reviewSuccess } =
+    useSelector((state: RootState) => state.liveBooking);
 
   const eta = useAppSelector(selectEta);
   const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : "";
@@ -143,10 +146,35 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
           <JourneyComplete
             trip={completedTrip}
             driver={driver}
+            isSubmitting={reviewLoading}
+            submitError={reviewError}
+            isSubmitted={!!reviewSuccess}
             onSubmitFeedback={(feedback) => {
-              console.log("Feedback:", feedback);
+              if (
+                !tripId ||
+                !bookingDetails?.bookingId ||
+                !bookingDetails?.driverId ||
+                !bookingDetails?.passengerId
+              ) {
+                console.error("Missing required booking or passenger details");
+                return;
+              }
+
+              dispatch(
+                submitDriverReviewRequest({
+                  bookingId: bookingDetails.bookingId,
+                  driverId: bookingDetails.driverId,
+                  passengerId: bookingDetails.passengerId,
+                  tripId,
+                  rating: feedback.rating,
+                  message: feedback.note.trim(),
+                }),
+              );
             }}
-            onSkip={() => setShowJourneyComplete(false)}
+            onSkip={() => {
+              dispatch(clearDriverReview());
+              setShowJourneyComplete(false);
+            }}
           />
         )}
       </div>
