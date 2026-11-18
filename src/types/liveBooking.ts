@@ -21,6 +21,8 @@ export interface BookingIdData {
 // Booking information used by the dashboard
 export interface BookingDetails {
   bookingId: string;
+  driverId: string;
+  passengerId: string;
   vehicleType: string;
   pickUpName: string;
   dropOffName: string;
@@ -35,10 +37,14 @@ export interface BookingDetailsResponse {
   success: boolean;
   data: {
     bookingId: string;
+    driverId: string;
+    passengerId: string;
     vehicleType: string;
     driverName: string;
     driverContact: string;
     vehicleRegNo: string;
+    driverTotalTrips: number;
+    driverRating: number;
     pickUpName: string;
     dropOffName: string;
     distance: number;
@@ -75,6 +81,25 @@ export interface CompletedTripData {
 export interface JourneyFeedback {
   rating: number;
   note: string;
+}
+
+export interface DriverReviewPayload {
+  bookingId: string;
+  driverId: string;
+  passengerId: string;
+  tripId: string;
+  rating: number;
+  message: string;
+}
+
+export interface DriverReviewResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    bookingId: string;
+    driverId: string;
+    rating: number;
+  };
 }
 
 export type TrackingEventType =

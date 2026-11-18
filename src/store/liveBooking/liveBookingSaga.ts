@@ -1,13 +1,25 @@
 import { call, put, takeLatest } from "redux-saga/effects";
 
-import { getBookingDetailsApi } from "@/server/api/liveBookingApi";
-import type { BookingDetailsResponse } from "@/types/liveBooking";
+import {
+  getBookingDetailsApi,
+  saveDriverReviewApi,
+} from "@/server/api/liveBookingApi";
+import type {
+  BookingDetailsResponse,
+  DriverReviewResponse,
+} from "@/types/liveBooking";
 
 import {
   getBookingDetailsRequest,
   getBookingDetailsSuccess,
   getBookingDetailsFailure,
+  submitDriverReviewRequest,
+  submitDriverReviewSuccess,
+  submitDriverReviewFailure,
 } from "./liveBookingSlice";
+import axios from "axios";
+
+// --------- Get Booking Details Saga ---------
 
 function* getBookingDetailsSaga(
   action: ReturnType<typeof getBookingDetailsRequest>,
@@ -25,8 +37,10 @@ function* getBookingDetailsSaga(
     yield put(
       getBookingDetailsSuccess({
         bookingDetails: {
-          bookingId: data?.bookingId,
-          vehicleType: data?.vehicleType,
+          bookingId: data.bookingId,
+          driverId: data.driverId,
+          passengerId: data.passengerId,
+          vehicleType: data.vehicleType,
           pickUpName: data.pickUpName,
           dropOffName: data.dropOffName,
           passengerName: data.passengerName,
@@ -38,6 +52,8 @@ function* getBookingDetailsSaga(
           driverName: data.driverName,
           driverContact: data.driverContact,
           vehicleRegNo: data.vehicleRegNo,
+          rating: data.driverRating,
+          trips: data.driverTotalTrips,
         },
         bookingMetrics: {
           distance: data.distance,
@@ -56,6 +72,35 @@ function* getBookingDetailsSaga(
   }
 }
 
+// --------- Submit Driver Review Saga ---------
+
+function* submitDriverReviewSaga(
+  action: ReturnType<typeof submitDriverReviewRequest>,
+) {
+  try {
+    const response: DriverReviewResponse = yield call(
+      saveDriverReviewApi,
+      action.payload,
+    );
+
+    console.log("Driver review response:", response);
+
+    yield put(submitDriverReviewSuccess(response));
+  } catch (error: unknown) {
+    let errorMessage = "Failed to submit feedback";
+
+    if (axios.isAxiosError(error)) {
+      errorMessage =
+        error.response?.data?.message || error.message || errorMessage;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    yield put(submitDriverReviewFailure(errorMessage));
+  }
+}
+
 export function* watchLiveBookingAsync() {
   yield takeLatest(getBookingDetailsRequest.type, getBookingDetailsSaga);
+  yield takeLatest(submitDriverReviewRequest.type, submitDriverReviewSaga);
 }

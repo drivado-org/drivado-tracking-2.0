@@ -4,6 +4,8 @@ import type {
   BookingDetails,
   BookingMetricsData,
   DriverData,
+  DriverReviewPayload,
+  DriverReviewResponse,
   TrackingEventType,
 } from "@/types/liveBooking";
 
@@ -17,6 +19,10 @@ interface LiveBookingState {
 
   sseConnected: boolean;
   sseEvents: Partial<Record<TrackingEventType, unknown>>;
+
+  reviewLoading: boolean;
+  reviewError: string | null;
+  reviewSuccess: DriverReviewResponse | null;
 }
 
 const initialState: LiveBookingState = {
@@ -29,6 +35,10 @@ const initialState: LiveBookingState = {
 
   sseConnected: false,
   sseEvents: {},
+
+  reviewLoading: false,
+  reviewError: null,
+  reviewSuccess: null,
 };
 
 const liveBookingSlice = createSlice({
@@ -61,6 +71,35 @@ const liveBookingSlice = createSlice({
       state.error = action.payload;
     },
 
+    submitDriverReviewRequest: (
+      state,
+      _action: PayloadAction<DriverReviewPayload>,
+    ) => {
+      state.reviewLoading = true;
+      state.reviewError = null;
+      state.reviewSuccess = null;
+    },
+
+    submitDriverReviewSuccess: (
+      state,
+      action: PayloadAction<DriverReviewResponse>,
+    ) => {
+      state.reviewLoading = false;
+      state.reviewError = null;
+      state.reviewSuccess = action.payload;
+    },
+
+    submitDriverReviewFailure: (state, action: PayloadAction<string>) => {
+      state.reviewLoading = false;
+      state.reviewError = action.payload;
+    },
+
+    clearDriverReview: (state) => {
+      state.reviewLoading = false;
+      state.reviewError = null;
+      state.reviewSuccess = null;
+    },
+
     trackingEventReceived: (
       state,
       action: PayloadAction<{
@@ -86,6 +125,10 @@ export const {
   getBookingDetailsRequest,
   getBookingDetailsSuccess,
   getBookingDetailsFailure,
+  submitDriverReviewRequest,
+  submitDriverReviewSuccess,
+  submitDriverReviewFailure,
+  clearDriverReview,
   trackingEventReceived,
   trackingConnectionChanged,
   clearTrackingEvents,

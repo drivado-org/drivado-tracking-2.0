@@ -4,7 +4,7 @@ import TripMetrics from "./components/TripMetrics";
 import JourneyDetails, { type JourneyData } from "./components/JourneyDetails";
 import BookingDetails, { type BookingData } from "./components/BookingDetails";
 import BookingId from "./components/BookingId";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import DashboardHeader from "./components/DashboardHeader";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store";
@@ -47,6 +47,16 @@ const LiveTrackingDashboard = ({
 }: LiveTrackingDashboardProps) => {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
+  // -----------START MOBILE SWIPE HANDLING-------------
+  const touchStart = useRef<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const scrollContainer = useRef<Element | null>(null);
+
+  const isMobileScreen = () => window.matchMedia("(max-width: 767px)").matches;
+
   const handleToggle = () => {
     setIsDetailsExpanded((prev) => {
       const next = !prev;
@@ -54,6 +64,63 @@ const LiveTrackingDashboard = ({
       return next;
     });
   };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobileScreen()) return;
+
+    if ((e.target as HTMLElement).closest("button")) return;
+
+    const touch = e.touches[0];
+
+    touchStart.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+
+    scrollContainer.current = (e.target as HTMLElement).closest(
+      "[data-sheet-scroll]",
+    );
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isMobileScreen() || !touchStart.current) return;
+
+    const touch = e.changedTouches[0];
+
+    const deltaY = touch.clientY - touchStart.current.y;
+    const deltaX = touch.clientX - touchStart.current.x;
+
+    if (Math.abs(deltaY) < 50 || Math.abs(deltaY) < Math.abs(deltaX)) {
+      touchStart.current = null;
+      return;
+    }
+
+    // Swipe UP → Expand dashboard
+    if (deltaY < -50 && !isDetailsExpanded) {
+      handleToggle();
+    }
+
+    // Swipe DOWN → Collapse dashboard
+    else if (deltaY > 50 && isDetailsExpanded) {
+      if (scrollContainer.current && scrollContainer.current.scrollTop > 0) {
+        touchStart.current = null;
+        return;
+      }
+
+      handleToggle();
+    }
+
+    touchStart.current = null;
+  };
+  // -------END MOBILE SWIPE HANDLING------------------
+
+  // const handleToggle = () => {
+  //   setIsDetailsExpanded((prev) => {
+  //     const next = !prev;
+  //     onExpandedChange(next);
+  //     return next;
+  //   });
+  // };
 
   // const dispatch = useDispatch();
   const eta = useSelector(selectEta);
@@ -119,7 +186,14 @@ const LiveTrackingDashboard = ({
   };
 
   return (
-    <div className="relative flex h-95 min-h-0 w-full flex-col bg-white md:h-full">
+    <div
+      className="touch-pan-y relative flex h-95 min-h-0 w-full flex-col bg-white md:h-full"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={() => {
+        touchStart.current = null;
+      }}
+    >
       {/* Mobile Header */}
       <DashboardHeader
         isExpanded={isDetailsExpanded}
@@ -140,15 +214,16 @@ const LiveTrackingDashboard = ({
         <BookingStatus statuses={statuses} />
         {driver && <DriverDetails driver={driver} />}
         <div
-          ref={(el) => {
-            if (el) {
-              console.log("Scroll height:", el.scrollHeight);
-              console.log("Client height:", el.clientHeight);
-              console.log("Can scroll:", el.scrollHeight > el.clientHeight);
-            }
-          }}
-          className={`min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
-    ${isDetailsExpanded ? "block max-h-none xs:max-h-90 sm:max-h-75" : "hidden"}
+          // ref={(el) => {
+          //   if (el) {
+          //     console.log("Scroll height:", el.scrollHeight);
+          //     console.log("Client height:", el.clientHeight);
+          //     console.log("Can scroll:", el.scrollHeight > el.clientHeight);
+          //   }
+          // }}
+          data-sheet-scroll
+          className={`custom-scrollbar min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
+    ${isDetailsExpanded ? "block max-h-65 xxs:max-h-none xs:max-h-90 sm:max-h-75" : "hidden"}
     md:block md:max-h-none md:flex-1 md:overflow-y-auto
                     `}
           style={{

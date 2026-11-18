@@ -13,13 +13,17 @@ import { toEtaMinutes } from "@/utils/etaFormat";
 import JourneyComplete from "./journeyComplete";
 import { useSelector, useDispatch } from "react-redux";
 import type { RootState } from "@/store";
-import { getBookingDetailsRequest } from "@/store/liveBooking/liveBookingSlice";
+import {
+  getBookingDetailsRequest,
+  submitDriverReviewRequest,
+  clearDriverReview,
+} from "@/store/liveBooking/liveBookingSlice";
 
 const bannerText = (
   status: DriverStatus | null,
   dropoffLocation: string,
   timeLeft: string,
-): { title: string; detail: string } => {
+): { title: string; detail: string; left?: string } => {
   switch (status) {
     case "ENROUTE":
       return { title: "Driver on the way", detail: `Pickup ${timeLeft} away` };
@@ -35,7 +39,8 @@ const bannerText = (
     default:
       return {
         title: "Almost there!",
-        detail: `${dropoffLocation} ${timeLeft} away`,
+        detail: `${dropoffLocation}`,
+        left: `${timeLeft} away`,
       };
   }
 };
@@ -61,9 +66,8 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
       dispatch(getBookingDetailsRequest(tripId));
     }
   }, [dispatch, tripId]);
-  const { driver, bookingDetails } = useSelector(
-    (state: RootState) => state.liveBooking,
-  );
+  const { driver, bookingDetails, reviewLoading, reviewError, reviewSuccess } =
+    useSelector((state: RootState) => state.liveBooking);
 
   const eta = useAppSelector(selectEta);
   const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : "";
@@ -85,7 +89,7 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
   };
 
   useEffect(() => {
-    if (status === "COMPLETED") {
+    if (status === "COMPLETED" || status === "NOSHOW") {
       setShowJourneyComplete(true);
     }
   }, [status]);
@@ -117,9 +121,14 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
             <div className="min-w-0 flex-1 text-left">
               <p className="text-sm font-bold leading-5">{banner.title}</p>
 
-              <p className="truncate text-xs font-medium text-[#a2a3a7]">
-                {banner.detail}
-              </p>
+              <div className="flex items-center">
+                <p className="w-60 truncate text-xs font-medium text-[#a2a3a7] pr-2">
+                  {banner.detail}
+                </p>
+                <p className="text-xs font-medium text-[#a2a3a7]">
+                  {banner.left}
+                </p>
+              </div>
             </div>
 
             {/* <Button
@@ -137,10 +146,36 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
           <JourneyComplete
             trip={completedTrip}
             driver={driver}
+            isNoShow={status === "NOSHOW"}
+            isSubmitting={reviewLoading}
+            submitError={reviewError}
+            isSubmitted={!!reviewSuccess}
             onSubmitFeedback={(feedback) => {
-              console.log("Feedback:", feedback);
+              if (
+                !tripId ||
+                !bookingDetails?.bookingId ||
+                !bookingDetails?.driverId ||
+                !bookingDetails?.passengerId
+              ) {
+                console.error("Missing required booking or passenger details");
+                return;
+              }
+
+              dispatch(
+                submitDriverReviewRequest({
+                  bookingId: bookingDetails.bookingId,
+                  driverId: bookingDetails.driverId,
+                  passengerId: bookingDetails.passengerId,
+                  tripId,
+                  rating: feedback.rating,
+                  message: feedback.note.trim(),
+                }),
+              );
             }}
-            onSkip={() => setShowJourneyComplete(false)}
+            onSkip={() => {
+              dispatch(clearDriverReview());
+              setShowJourneyComplete(false);
+            }}
           />
         )}
       </div>
