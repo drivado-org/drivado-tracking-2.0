@@ -67,11 +67,13 @@ const JourneyComplete = ({
             />
 
             <h2 className="mt-5 text-xl font-bold text-gray-900">
-              Trip has been marked as No Show
+              This trip has ended.
             </h2>
 
-            <p className="mt-2 max-w-xs text-sm leading-6 text-gray-500">
-              This trip has been marked as no-show. Thank you.
+            <p className="pt-2.5 max-w-md text-sm leading-5 text-gray-500">
+              Your chauffeur waited for you but was unable to meet you, so your
+              trip was marked as a no-show. If this is a mistake, please contact
+              Drivado support. Thank you.
             </p>
 
             <button
