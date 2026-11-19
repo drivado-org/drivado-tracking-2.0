@@ -12,9 +12,16 @@ type CarMarkerProps = {
   heading?: number;
   /** Shown above the car, e.g. the time left. Not rotated with the car. */
   label?: string | null;
+  /** The trip ended without the passenger (no show): the car is faded and grey. */
+  muted?: boolean;
 };
 
-const CarMarker = ({ position, heading = 0, label = null }: CarMarkerProps) => {
+const CarMarker = ({
+  position,
+  heading = 0,
+  label = null,
+  muted = false,
+}: CarMarkerProps) => {
   if (!position) return null;
 
   return (
@@ -32,6 +39,7 @@ const CarMarker = ({ position, heading = 0, label = null }: CarMarkerProps) => {
           width={36}
           height={64}
           draggable={false}
+          className={muted ? "opacity-50 grayscale" : undefined}
           style={{
             transform: `rotate(${heading}deg)`,
             transition: "transform 500ms linear",

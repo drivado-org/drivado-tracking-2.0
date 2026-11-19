@@ -107,9 +107,9 @@ export type TrackingEventType =
   | "location"
   | "eta"
   | "route_change"
-  | "trip_stage"
   | "vehicle_meta"
-  | "status";
+  | "driver_status"
+  | "notification";
 
 export interface TrackingEvent {
   type: TrackingEventType;

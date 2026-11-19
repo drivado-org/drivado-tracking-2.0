@@ -11,6 +11,7 @@ import reducer, {
   trackingError,
   trackingLocationUpdate,
   trackingStatusUpdate,
+  trackingNotification,
   trackingUpdate,
 } from "@/store/tracking/trackingSlice";
 
@@ -35,6 +36,7 @@ describe("trackingSlice reducers", () => {
       data: null,
       points: [],
       driverStatus: null,
+      notification: null,
       loading: false,
       connected: false,
       error: null,
@@ -215,5 +217,16 @@ describe("selectDriverPosition", () => {
   it("returns the same object while the location is unchanged", () => {
     const state = { tracking: reducer(initial, trackingUpdate(point())) };
     expect(selectDriverPosition(state)).toBe(selectDriverPosition(state));
+  });
+});
+
+describe("trackingNotification", () => {
+  it("keeps the newest message and startTracking clears it", () => {
+    const first = { message: "Your driver is 2 minutes away", receivedAt: "2026-11-16T10:30:00.000Z" };
+    const second = { message: "Your driver has arrived", receivedAt: "2026-11-16T10:32:00.000Z" };
+    const state = reducer(reducer(initial, trackingNotification(first)), trackingNotification(second));
+
+    expect(state.notification).toEqual(second);
+    expect(reducer(state, startTracking({ tripID: "T1" })).notification).toBeNull();
   });
 });

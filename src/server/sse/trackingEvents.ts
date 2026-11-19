@@ -4,9 +4,9 @@ export const TRACKING_EVENTS = {
   location: "location",
   eta: "eta",
   routeChange: "route_change",
-  tripStage: "trip_stage",
   vehicleMeta: "vehicle_meta",
-  status: "status",
+  driverStatus: "driver_status",
+  notification: "notification",
 } as const;
 
 export const DEFAULT_SSE_EVENT = "message";

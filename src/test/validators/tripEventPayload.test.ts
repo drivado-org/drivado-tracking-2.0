@@ -1,6 +1,8 @@
 import {
-  isEtaPending,
+  isEtaEmpty,
+  parseDriverStatusEvent,
   parseEtaEvent,
+  parseNotificationEvent,
   parseRouteChange,
   parseTripSnapshot,
   parseVehicleMeta,
@@ -13,9 +15,9 @@ const PATH = [
   { lat: 22.5726, lng: 88.4197 },
 ];
 
-/** Rules shared by every event: required ids and tripType oneof TRIP_S TRIP_D. */
 type Case = [label: string, raw: Record<string, unknown>];
 
+/** Snapshot only: required ids and tripType oneof TRIP_S TRIP_D. */
 const BAD_BASES: Case[] = [
   ["no driverID", { ...BASE, driverID: undefined }],
   ["empty bookingID", { ...BASE, bookingID: "  " }],
@@ -25,120 +27,123 @@ const BAD_BASES: Case[] = [
   ["lowercase tripType", { ...BASE, tripType: "trip_s" }],
 ];
 
-describe("parseEtaEvent (ETAUpdate)", () => {
+describe("parseEtaEvent { eta, distance }", () => {
   const NOW = Date.parse("2026-10-15T10:00:00.000Z");
-  const valid = { ...BASE, driverStatus: "ENROUTE", eta: 300, distance: 1500.5 };
 
-  it("keeps every field and computes the arrival time", () => {
-    expect(parseEtaEvent(JSON.stringify(valid), NOW)).toEqual({
-      ...BASE,
-      driverStatus: "ENROUTE",
-      etaSeconds: 300,
-      distanceMeters: 1500.5,
-      arrivalTime: "2026-10-15T10:05:00.000Z",
+  it("reads the backend payload and computes the arrival time", () => {
+    expect(parseEtaEvent('{ "eta": 420, "distance": 1234.5 }', NOW)).toEqual({
+      etaSeconds: 420,
+      distanceMeters: 1234.5,
+      arrivalTime: "2026-10-15T10:07:00.000Z",
+    });
+    expect(parseEtaEvent({ eta: 60, distance: 180 }, NOW)).toMatchObject({
+      etaSeconds: 60,
+      distanceMeters: 180,
     });
   });
 
-  it.each([undefined, ""])("allows driverStatus %p (omitempty)", (driverStatus) => {
-    expect(parseEtaEvent({ ...valid, driverStatus }, NOW)?.driverStatus).toBeNull();
-  });
-
-  it("reads bookingStatus before driverStatus, in any case", () => {
-    expect(
-      parseEtaEvent({ ...valid, bookingStatus: "pob", driverStatus: "ENROUTE" }, NOW)?.driverStatus,
-    ).toBe("POB");
-    expect(parseEtaEvent({ ...valid, bookingStatus: "" }, NOW)?.driverStatus).toBe("ENROUTE");
-  });
-
-  it("reads ARRIVE as ARRIVED", () => {
-    expect(parseEtaEvent({ ...valid, bookingStatus: "ARRIVE" }, NOW)?.driverStatus).toBe(
-      "ARRIVED",
-    );
-  });
-
-  it("accepts eta 0 and distance 0 (arrived)", () => {
-    expect(parseEtaEvent({ ...valid, eta: 0, distance: 0 }, NOW)).toMatchObject({
+  it("accepts eta 0 and distance 0", () => {
+    expect(parseEtaEvent({ eta: 0, distance: 0 }, NOW)).toMatchObject({
       etaSeconds: 0,
       distanceMeters: 0,
     });
   });
 
-  it.each<Case>([
-    ...BAD_BASES,
-    ["unknown driverStatus", { ...BASE, driverStatus: "FLYING", eta: 1, distance: 1 }],
-    ["unknown bookingStatus", { ...BASE, bookingStatus: "FLYING", eta: 1, distance: 1 }],
-    ["no eta", { ...BASE, distance: 1 }],
-    ["negative eta", { ...BASE, eta: -1, distance: 1 }],
-    ["fractional eta", { ...BASE, eta: 1.5, distance: 1 }],
-    ["string eta", { ...BASE, eta: "300", distance: 1 }],
-    ["no distance", { ...BASE, eta: 1 }],
-    ["negative distance", { ...BASE, eta: 1, distance: -0.1 }],
-  ])("rejects %s", (_label, raw) => {
-    const payload = "eta" in raw || "distance" in raw ? raw : { ...raw, eta: 1, distance: 1 };
-    expect(parseEtaEvent(payload, NOW)).toBeNull();
+  it("ignores extra fields", () => {
+    expect(parseEtaEvent({ ...BASE, driverStatus: "POB", eta: 1, distance: 2 }, NOW)).toEqual({
+      etaSeconds: 1,
+      distanceMeters: 2,
+      arrivalTime: "2026-10-15T10:00:01.000Z",
+    });
   });
 
-  it("marks the opening { driverStatus: '', eta: 0, distance: 0 } as pending", () => {
-    const opening = parseEtaEvent({ ...BASE, driverStatus: "", eta: 0, distance: 0 }, NOW)!;
-    expect(isEtaPending(opening)).toBe(true);
-    expect(isEtaPending(parseEtaEvent({ ...valid, eta: 0, distance: 0 }, NOW)!)).toBe(false);
-    expect(isEtaPending(parseEtaEvent(valid, NOW)!)).toBe(false);
+  it.each<Case>([
+    ["no eta", { distance: 1 }],
+    ["negative eta", { eta: -1, distance: 1 }],
+    ["fractional eta", { eta: 1.5, distance: 1 }],
+    ["string eta", { eta: "300", distance: 1 }],
+    ["no distance", { eta: 1 }],
+    ["negative distance", { eta: 1, distance: -0.1 }],
+  ])("rejects %s", (_label, raw) => {
+    expect(parseEtaEvent(raw, NOW)).toBeNull();
   });
 
   it.each([null, "not json", []])("rejects %p", (raw) => {
     expect(parseEtaEvent(raw, NOW)).toBeNull();
   });
+
+  it("isEtaEmpty: only 0 / 0", () => {
+    expect(isEtaEmpty(parseEtaEvent({ eta: 0, distance: 0 }, NOW)!)).toBe(true);
+    expect(isEtaEmpty(parseEtaEvent({ eta: 0, distance: 5 }, NOW)!)).toBe(false);
+    expect(isEtaEmpty(parseEtaEvent({ eta: 60, distance: 180 }, NOW)!)).toBe(false);
+  });
 });
 
-describe("parseRouteChange (RouteChange)", () => {
-  const valid = { ...BASE, driverStatus: "POB", routePath: PATH };
-
-  it("keeps every field", () => {
-    expect(parseRouteChange(JSON.stringify(valid))).toEqual(valid);
+describe("parseRouteChange { route }", () => {
+  it("reads the backend payload", () => {
+    expect(parseRouteChange(JSON.stringify({ route: PATH }))).toEqual({ routePath: PATH });
+    expect(
+      parseRouteChange({
+        route: [
+          { lat: 22.5726, lng: 88.3639 },
+          { lat: 22.6, lng: 88.4 },
+        ],
+      }),
+    ).toEqual({
+      routePath: [
+        { lat: 22.5726, lng: 88.3639 },
+        { lat: 22.6, lng: 88.4 },
+      ],
+    });
   });
 
   it.each<Case>([
-    ...BAD_BASES.map(([label, base]): Case => [label, { ...base, driverStatus: "POB", routePath: PATH }]),
-    ["no driverStatus", { ...BASE, routePath: PATH }],
-    ["no routePath", { ...BASE, driverStatus: "POB" }],
-    ["one point", { ...valid, routePath: [PATH[0]] }],
-    ["a point out of range", { ...valid, routePath: [PATH[0], { lat: 91, lng: 88 }] }],
-    ["a 0,0 point", { ...valid, routePath: [...PATH, { lat: 0, lng: 0 }] }],
-    ["a string coordinate", { ...valid, routePath: [PATH[0], { lat: "22.5", lng: 88.4 }] }],
-    ["a latitude/longitude point", { ...valid, routePath: [PATH[0], { latitude: 22.5, longitude: 88.4 }] }],
-    ["a string routePath", { ...valid, routePath: "_p~iF~ps|U" }],
+    ["no route", {}],
+    ["the old routePath field", { routePath: PATH }],
+    ["one point", { route: [PATH[0]] }],
+    ["a point out of range", { route: [PATH[0], { lat: 91, lng: 88 }] }],
+    ["a 0,0 point", { route: [...PATH, { lat: 0, lng: 0 }] }],
+    ["a string coordinate", { route: [PATH[0], { lat: "22.5", lng: 88.4 }] }],
+    ["a latitude/longitude point", { route: [PATH[0], { latitude: 22.5, longitude: 88.4 }] }],
+    ["a string route", { route: "_p~iF~ps|U" }],
   ])("rejects %s", (_label, raw) => {
     expect(parseRouteChange(raw)).toBeNull();
   });
 });
 
-describe("parseVehicleMeta (TripVehicleMeta)", () => {
-  const valid = { ...BASE, driverStatus: "ENROUTE", reroute: true, bearing: 359 };
-
-  it("keeps every field", () => {
-    expect(parseVehicleMeta(JSON.stringify(valid))).toEqual(valid);
-  });
-
-  it("accepts bearing 0", () => {
-    expect(parseVehicleMeta({ ...valid, bearing: 0 })?.bearing).toBe(0);
-  });
-
-  it("accepts an event without bearing (the backend leaves it out)", () => {
-    expect(parseVehicleMeta({ ...valid, bearing: undefined })).toEqual({ ...valid, bearing: null });
+describe("parseVehicleMeta { reroute, bearing? }", () => {
+  it.each<[Record<string, unknown>, { reroute: boolean; bearing: number | null }]>([
+    [{ reroute: false, bearing: 90 }, { reroute: false, bearing: 90 }],
+    [{ reroute: true, bearing: 270 }, { reroute: true, bearing: 270 }],
+    [{ reroute: false, bearing: 0 }, { reroute: false, bearing: 0 }],
+    [{ reroute: false }, { reroute: false, bearing: null }],
+    [{ reroute: true }, { reroute: true, bearing: null }],
+  ])("reads %j", (raw, expected) => {
+    expect(parseVehicleMeta(JSON.stringify(raw))).toEqual(expected);
   });
 
   it.each<Case>([
-    ...BAD_BASES.map(
-      ([label, base]): Case => [label, { ...base, driverStatus: "ENROUTE", reroute: false, bearing: 1 }],
-    ),
-    ["no driverStatus", { ...valid, driverStatus: undefined }],
-    ["no reroute", { ...valid, reroute: undefined }],
-    ["string reroute", { ...valid, reroute: "true" }],
-    ["bearing 360", { ...valid, bearing: 360 }],
-    ["negative bearing", { ...valid, bearing: -1 }],
-    ["string bearing", { ...valid, bearing: "90" }],
+    ["no reroute", { bearing: 90 }],
+    ["string reroute", { reroute: "true", bearing: 90 }],
+    ["bearing 360", { reroute: false, bearing: 360 }],
+    ["negative bearing", { reroute: false, bearing: -1 }],
+    ["string bearing", { reroute: false, bearing: "90" }],
   ])("rejects %s", (_label, raw) => {
     expect(parseVehicleMeta(raw)).toBeNull();
+  });
+});
+
+describe("parseDriverStatusEvent { driverStatus }", () => {
+  it.each(["ENROUTE", "ARRIVED", "POB", "COMPLETED"])("reads %s", (driverStatus) => {
+    expect(parseDriverStatusEvent(JSON.stringify({ driverStatus }))).toEqual({ driverStatus });
+  });
+
+  it.each<Case>([
+    ["no driverStatus", {}],
+    ["empty driverStatus", { driverStatus: "" }],
+    ["unknown driverStatus", { driverStatus: "FLYING" }],
+  ])("rejects %s", (_label, raw) => {
+    expect(parseDriverStatusEvent(raw)).toBeNull();
   });
 });
 
@@ -205,5 +210,32 @@ describe("parseTripSnapshot (TripSnapshot)", () => {
     ["unknown driverStatus", { ...BASE, driverStatus: "PARKED" }],
   ])("rejects %s", (_label, raw) => {
     expect(parseTripSnapshot(raw)).toBeNull();
+  });
+});
+
+describe("parseNotificationEvent { message }", () => {
+  const NOW = Date.parse("2026-11-16T10:30:00.000Z");
+
+  it.each(["Your driver is 2 minutes away", "Your driver has arrived"])("reads %s", (message) => {
+    expect(parseNotificationEvent(JSON.stringify({ message }), NOW)).toEqual({
+      message,
+      receivedAt: "2026-11-16T10:30:00.000Z",
+    });
+  });
+
+  it("trims the message", () => {
+    expect(parseNotificationEvent({ message: "  Hi  " }, NOW)?.message).toBe("Hi");
+  });
+
+  it.each<Case>([
+    ["no message", {}],
+    ["empty message", { message: "  " }],
+    ["numeric message", { message: 2 }],
+  ])("rejects %s", (_label, raw) => {
+    expect(parseNotificationEvent(raw, NOW)).toBeNull();
+  });
+
+  it("rejects bad JSON", () => {
+    expect(parseNotificationEvent("{ message", NOW)).toBeNull();
   });
 });

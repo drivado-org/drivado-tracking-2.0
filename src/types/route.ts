@@ -1,42 +1,43 @@
 import type { LatLng } from "./geo";
-import type { DriverStatus, TripType } from "./tracking";
+import type { DriverStatus } from "./tracking";
 
-// Mirrors the backend structs sent on the trip stream.
+// Mirrors the payloads sent on the trip stream (GET /trips/{tripID}/stream).
+// Only `snapshot` carries the trip ids; the live events below carry just their own fields.
 
-/** Fields every trip event carries. */
-export interface TripEventBase {
-  driverID: string;
-  bookingID: string;
-  tripID: string;
-  tripType: TripType;
-}
-
-/** `event: eta` (ETAUpdate). */
-export interface EtaUpdate extends TripEventBase {
-  /** null when the backend leaves it out (omitempty). */
-  driverStatus: DriverStatus | null;
-  /** Time left, from `eta`. */
+/** `event: eta` — { eta, distance }. */
+export interface EtaUpdate {
+  /** Time left in seconds, from `eta`. */
   etaSeconds: number;
-  /** Distance left, from `distance`. */
+  /** Distance left in meters, from `distance`. */
   distanceMeters: number;
   /** ISO string: when the event arrived plus etaSeconds. */
   arrivalTime: string;
 }
 
-/** `event: route_change` (RouteChange). */
-export interface RouteChange extends TripEventBase {
-  driverStatus: DriverStatus;
-  /** At least 2 points. */
+/** `event: route_change` — { route }. */
+export interface RouteChange {
+  /** At least 2 points, from `route`. */
   routePath: LatLng[];
 }
 
-/** `event: vehicle_meta` (TripVehicleMeta). */
-export interface TripVehicleMeta extends TripEventBase {
-  driverStatus: DriverStatus;
+/** `event: vehicle_meta` — { reroute, bearing? }. */
+export interface TripVehicleMeta {
   /** The driver left the route; a route_change follows. */
   reroute: boolean;
   /** Degrees clockwise from north, 0–359. null when the event leaves it out. */
   bearing: number | null;
+}
+
+/** `event: driver_status` — { driverStatus }. */
+export interface DriverStatusUpdate {
+  driverStatus: DriverStatus;
+}
+
+/** `event: notification` — { message }. */
+export interface TripNotification {
+  message: string;
+  /** ISO string: when the event arrived. Tells two identical messages apart. */
+  receivedAt: string;
 }
 
 export interface RouteState {

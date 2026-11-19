@@ -42,4 +42,16 @@ describe("CarMarker", () => {
     render(<CarMarker position={{ lat: 22.5726, lng: 88.3639 }} />);
     expect(screen.getByTestId("car-marker").textContent).toBe("");
   });
+
+  it("fades the car after a no show", () => {
+    render(<CarMarker position={{ lat: 22.5726, lng: 88.3639 }} muted />);
+    const img = screen.getByTestId("car-marker").querySelector("img");
+    expect(img).toHaveClass("opacity-50", "grayscale");
+  });
+
+  it("draws the car in full colour by default", () => {
+    render(<CarMarker position={{ lat: 22.5726, lng: 88.3639 }} />);
+    const img = screen.getByTestId("car-marker").querySelector("img");
+    expect(img).not.toHaveClass("grayscale");
+  });
 });

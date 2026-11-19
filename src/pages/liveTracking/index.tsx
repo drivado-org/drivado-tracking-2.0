@@ -6,7 +6,10 @@ import DIcon from "@/assets/images/d-icon.png";
 import { useParams } from "react-router-dom";
 import { useAppSelector } from "@/redux/hooks";
 import { selectEta } from "@/store/route/routeSlice";
-import { selectDriverStatus } from "@/store/tracking/trackingSlice";
+import {
+  selectDriverStatus,
+  selectNotification,
+} from "@/store/tracking/trackingSlice";
 import type { DriverStatus } from "@/types/tracking";
 import { toEtaMinutes } from "@/utils/etaFormat";
 // import { Button } from "@/components/ui/button";
@@ -72,11 +75,17 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
   const eta = useAppSelector(selectEta);
   const etaTimeLeft = eta ? `${toEtaMinutes(eta.etaSeconds)} min` : "";
   const status = useAppSelector(selectDriverStatus);
-  const banner = bannerText(
+  const notification = useAppSelector(selectNotification);
+  // Server message from `event: notification`, shown until the banner hides.
+  const [message, setMessage] = useState<string | null>(null);
+  const statusBanner = bannerText(
     status,
     bookingDetails?.dropOffName ?? "",
     etaTimeLeft,
   );
+  const banner = message
+    ? { title: message, detail: statusBanner.detail }
+    : statusBanner;
 
   const completedTrip = {
     duration: eta ? toEtaMinutes(eta.etaSeconds) : 0,
@@ -94,15 +103,26 @@ const LiveTracking = ({ isJourneyCompleted = true }: TrackingMapProps) => {
     }
   }, [status]);
 
+  // Each new notification (even the same text again) shows the banner for another 10 s.
+  const [seenNotification, setSeenNotification] = useState(notification);
+  if (notification !== seenNotification) {
+    setSeenNotification(notification);
+    if (notification) {
+      setMessage(notification.message);
+      setShowNotification(true);
+    }
+  }
+
   useEffect(() => {
     if (!showNotification) return;
 
     const timer = setTimeout(() => {
       setShowNotification(false);
-    }, 10000);
+      setMessage(null);
+    }, 5000);
 
     return () => clearTimeout(timer);
-  }, [showNotification]);
+  }, [showNotification, notification]);
 
   return (
     <div className="relative flex h-dvh w-full overflow-hidden flex-col md:flex-row bg-slate-100">

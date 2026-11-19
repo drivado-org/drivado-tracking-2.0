@@ -1,3 +1,4 @@
+import type { TripNotification } from "./route";
 import type { LatLng, TrackPoint } from "./geo";
 
 export type TripType = "TRIP_S" | "TRIP_D";
@@ -63,8 +64,10 @@ export interface TrackingState {
   data: TrackingPayload | null;
   /** Recent car positions, oldest first, newest last. Capped at MAX_TRACK_POINTS. */
   points: TrackPoint[];
-  /** Latest known status, from the snapshot or eta / route_change / vehicle_meta. */
+  /** Latest known status, from the snapshot or driver_status. */
   driverStatus: DriverStatus | null;
+  /** Latest `event: notification` message; null until one arrives. */
+  notification: TripNotification | null;
   loading: boolean;
   connected: boolean;
   error: string | null;
