@@ -23,7 +23,7 @@ describe("trackingAction", () => {
     await trackingAction({ tripID: "T123" }, controller.signal);
 
     expect(getMock).toHaveBeenCalledWith(
-      "/realtime/realtime/trips/T123/stream",
+      "/realtime/trips/T123/stream",
       {
         // No Authorization: the endpoint is public and a custom header makes
         // the browser send a CORS preflight, which the server rejects (405).
@@ -39,14 +39,14 @@ describe("trackingAction", () => {
     env.trackingApiBaseUrl = "https://testapi.drivado.com";
     await trackingAction({ tripID: "T123" });
     expect(getMock.mock.lastCall?.[0]).toBe(
-      "https://testapi.drivado.com/realtime/realtime/trips/T123/stream",
+      "https://testapi.drivado.com/realtime/trips/T123/stream",
     );
   });
 
   it("encodes the trip id", async () => {
     await trackingAction({ tripID: "T 1/2" });
     expect(getMock.mock.lastCall?.[0]).toBe(
-      "/realtime/realtime/trips/T%201%2F2/stream",
+      "/realtime/trips/T%201%2F2/stream",
     );
   });
 

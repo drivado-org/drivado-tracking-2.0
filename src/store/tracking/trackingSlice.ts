@@ -13,6 +13,7 @@ import type {
   TrackingPayload,
   TrackingState,
 } from "@/types/tracking";
+import type { TripNotification } from "@/types/route";
 
 const initialState: TrackingState = {
   data: null,
@@ -20,6 +21,8 @@ const initialState: TrackingState = {
   points: [],
 
   driverStatus: null,
+
+  notification: null,
 
   loading: false,
 
@@ -92,9 +95,14 @@ const trackingSlice = createSlice({
       markLive(state);
     },
 
-    /** Status from eta / route_change / vehicle_meta. */
+    /** Status from driver_status (or a snapshot without a location). */
     trackingStatusUpdate: (state, action: PayloadAction<DriverStatus>) => {
       setStatus(state, action.payload);
+    },
+
+    /** `event: notification`: the newest message replaces the last one. */
+    trackingNotification: (state, action: PayloadAction<TripNotification>) => {
+      state.notification = action.payload;
     },
 
     trackingDisconnected: (state) => {
@@ -121,6 +129,7 @@ export const {
   trackingUpdate,
   trackingLocationUpdate,
   trackingStatusUpdate,
+  trackingNotification,
   trackingDisconnected,
   trackingError,
   stopTracking,
@@ -133,6 +142,9 @@ export const selectTrackPoints = (state: TrackingRootState) => state.tracking.po
 
 /** Trip status (ENROUTE → ARRIVED → POB → COMPLETED), from every event; null until one says. */
 export const selectDriverStatus = (state: TrackingRootState) => state.tracking.driverStatus;
+
+/** Latest server notification ({ message, receivedAt }), or null. */
+export const selectNotification = (state: TrackingRootState) => state.tracking.notification;
 
 /** Newest car point, or null before the first one. */
 export const selectDriverPoint = (state: TrackingRootState) =>

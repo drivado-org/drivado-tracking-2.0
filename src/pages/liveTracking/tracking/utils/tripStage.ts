@@ -15,6 +15,8 @@ export const destinationLabel = (status: DriverStatus | null): string | null => 
       return "DROP OFF";
     case "COMPLETED":
       return "COMPLETED";
+    case "NOSHOW":
+      return "NO SHOW";
     default:
       return null;
   }
@@ -24,9 +26,16 @@ export const destinationLabel = (status: DriverStatus | null): string | null => 
 export const isPickupLeg = (status: DriverStatus | null) =>
   status === "ENROUTE" || status === "ARRIVED";
 
+/**
+ * The route's end is the pickup: on the pickup leg, and after a no-show (the trip ended
+ * there, with the driver waiting at the pickup).
+ */
+export const endsAtPickup = (status: DriverStatus | null) =>
+  isPickupLeg(status) || status === "NOSHOW";
+
 /** Where the route ends, for the camera toasts. */
 export const destinationName = (status: DriverStatus | null): string => {
-  if (status === "ENROUTE" || status === "ARRIVED") return "pickup";
+  if (endsAtPickup(status)) return "pickup";
   if (status === "POB" || status === "COMPLETED") return "drop off";
   return "destination";
 };

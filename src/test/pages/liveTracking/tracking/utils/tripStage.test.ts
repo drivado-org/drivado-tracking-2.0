@@ -1,5 +1,7 @@
 import {
   destinationLabel,
+  destinationName,
+  endsAtPickup,
   isDriving,
   isPickupLeg,
   statusNotice,
@@ -12,7 +14,18 @@ describe("tripStage", () => {
     expect(destinationLabel("POB")).toBe("DROP OFF");
     expect(destinationLabel("COMPLETED")).toBe("COMPLETED");
     expect(destinationLabel(null)).toBeNull();
-    expect(destinationLabel("NOSHOW")).toBeNull();
+    expect(destinationLabel("NOSHOW")).toBe("NO SHOW");
+  });
+
+  it("keeps the pickup as the route's end after a no show", () => {
+    expect(endsAtPickup("ENROUTE")).toBe(true);
+    expect(endsAtPickup("ARRIVED")).toBe(true);
+    expect(endsAtPickup("NOSHOW")).toBe(true);
+    expect(endsAtPickup("POB")).toBe(false);
+    expect(endsAtPickup("COMPLETED")).toBe(false);
+    expect(endsAtPickup(null)).toBe(false);
+    expect(destinationName("NOSHOW")).toBe("pickup");
+    expect(isPickupLeg("NOSHOW")).toBe(false);
   });
 
   it("is on the pickup leg from en route until the passenger is on board", () => {

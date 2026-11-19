@@ -1,7 +1,7 @@
 import type { PayloadAction } from "@reduxjs/toolkit";
 import type { AxiosResponse } from "axios";
 import { buffers, eventChannel, type EventChannel } from "redux-saga";
-import { call, delay, put, race, take, takeLatest } from "redux-saga/effects";
+import { call, delay, put, race, select, take, takeLatest } from "redux-saga/effects";
 
 import {
   RECONNECT_BASE_DELAY_MS,
@@ -18,17 +18,20 @@ import { TRACKING_EVENTS } from "@/server/sse/trackingEvents";
 import type {
   DriverStatus,
   TrackingActionPayload,
+  TrackingState,
   TripSnapshot,
 } from "@/types/tracking";
-import { isTripFinished } from "@/utils/tripStatus";
-import type { TripEventBase } from "@/types/route";
+import type { EtaUpdate, RouteState } from "@/types/route";
+import { isArrivalStatus, isTripFinished } from "@/utils/tripStatus";
 import {
   parseLocationUpdate,
   parseTrackingMessage,
 } from "@/validators/trackingPayload";
 import {
-  isEtaPending,
+  isEtaEmpty,
+  parseDriverStatusEvent,
   parseEtaEvent,
+  parseNotificationEvent,
   parseRouteChange,
   parseTripSnapshot,
   parseVehicleMeta,
@@ -45,6 +48,7 @@ import {
   trackingDisconnected,
   trackingError,
   trackingLocationUpdate,
+  trackingNotification,
   trackingStatusUpdate,
   trackingUpdate,
 } from "@/store/tracking/trackingSlice";
@@ -85,24 +89,28 @@ const createStreamChannel = (
 const isSameTrip = (a: string, b: string) =>
   a.trim().toUpperCase() === b.trim().toUpperCase();
 
-/** Parses an eta / route_change / vehicle_meta event; null for another trip or a bad payload. */
-const readTripEvent = <T extends TripEventBase>(
+/** Parses an eta / route_change / vehicle_meta / driver_status / notification event; null for a bad payload. */
+const readTripEvent = <T>(
   parse: (raw: unknown) => T | null,
   name: string,
   data: string,
-  tripID: string,
 ): T | null => {
   const parsed = parse(data);
-  if (!parsed) {
-    console.warn(`TRACKING invalid ${name} ignored:`, data);
-    return null;
-  }
-  if (!isSameTrip(parsed.tripID, tripID)) {
-    console.warn(`TRACKING ${name} for another trip ignored:`, parsed.tripID);
-    return null;
-  }
+  if (!parsed) console.warn(`TRACKING invalid ${name} ignored:`, data);
   return parsed;
 };
+
+type StreamRootState = { tracking: TrackingState; route: RouteState };
+
+/**
+ * { eta: 0, distance: 0 } before any real ETA means "route not known yet": skipped.
+ * After a real ETA, or once the driver has arrived, it is the real "0 min".
+ */
+function* shouldShowEta(eta: EtaUpdate, status: DriverStatus | null) {
+  if (!isEtaEmpty(eta) || isArrivalStatus(status)) return true;
+  const shown: EtaUpdate | null = yield select((state: StreamRootState) => state.route.eta);
+  return shown !== null;
+}
 
 /** Splits the connect snapshot into the actions the live events use; later events overwrite them. */
 function* applySnapshot(snapshot: TripSnapshot) {
@@ -116,20 +124,19 @@ function* applySnapshot(snapshot: TripSnapshot) {
   }
 
   if (eta !== undefined && distance !== undefined) {
-    yield put(
-      etaUpdate({
-        ...trip,
-        etaSeconds: eta,
-        distanceMeters: distance,
-        arrivalTime: new Date(Date.now() + eta * 1000).toISOString(),
-      }),
-    );
+    const update: EtaUpdate = {
+      etaSeconds: eta,
+      distanceMeters: distance,
+      arrivalTime: new Date(Date.now() + eta * 1000).toISOString(),
+    };
+    const show: boolean = yield call(shouldShowEta, update, trip.driverStatus);
+    if (show) yield put(etaUpdate(update));
   }
 
-  if (route) yield put(routeChanged({ ...trip, routePath: route }));
+  if (route) yield put(routeChanged({ routePath: route }));
 
   if (bearing !== undefined) {
-    yield put(vehicleMetaUpdate({ ...trip, reroute: false, bearing }));
+    yield put(vehicleMetaUpdate({ reroute: false, bearing }));
   }
 }
 
@@ -209,15 +216,10 @@ function* streamTripOnce(action: PayloadAction<TrackingActionPayload>) {
         throw event.error;
       }
 
-      // -----------------------------------------------
-      // Route, ETA and bearing events
-      // -----------------------------------------------
-
       const tripID = action.payload.tripID;
-      let tripEvent: { driverStatus: DriverStatus | null } | null = null;
 
       // -----------------------------------------------
-      // Snapshot on connect: location, ETA, route and bearing at once
+      // Snapshot on connect: ids, status, location, ETA, route and bearing at once
       // -----------------------------------------------
 
       // A payload that isn't a full snapshot falls through to the location parser below.
@@ -242,43 +244,52 @@ function* streamTripOnce(action: PayloadAction<TrackingActionPayload>) {
         continue;
       }
 
+      // -----------------------------------------------
+      // Live events: ETA, route, bearing / reroute, status, notification
+      // -----------------------------------------------
+
       if (event.event === TRACKING_EVENTS.eta) {
-        const eta = readTripEvent(parseEtaEvent, event.event, event.data, tripID);
-        if (eta && !isEtaPending(eta)) yield put(etaUpdate(eta));
-        tripEvent = eta;
-      } else if (event.event === TRACKING_EVENTS.routeChange) {
-        const route = readTripEvent(parseRouteChange, event.event, event.data, tripID);
-        if (route) yield put(routeChanged(route));
-        tripEvent = route;
-      } else if (event.event === TRACKING_EVENTS.vehicleMeta) {
-        const meta = readTripEvent(parseVehicleMeta, event.event, event.data, tripID);
-        if (meta) yield put(vehicleMetaUpdate(meta));
-        tripEvent = meta;
-      }
-
-      if (
-        event.event === TRACKING_EVENTS.eta ||
-        event.event === TRACKING_EVENTS.routeChange ||
-        event.event === TRACKING_EVENTS.vehicleMeta
-      ) {
-        if (tripEvent?.driverStatus) {
-          yield put(trackingStatusUpdate(tripEvent.driverStatus));
-
-          if (isTripFinished(tripEvent.driverStatus)) {
-            console.log("TRACKING ended:", tripEvent.driverStatus);
-            yield put(trackingDisconnected());
-            result.ended = true;
-            return result;
-          }
+        const eta = readTripEvent(parseEtaEvent, event.event, event.data);
+        if (eta) {
+          const status: DriverStatus | null = yield select(
+            (state: StreamRootState) => state.tracking.driverStatus,
+          );
+          const show: boolean = yield call(shouldShowEta, eta, status);
+          if (show) yield put(etaUpdate(eta));
         }
         continue;
       }
 
-      // trip_stage / status: payload shape not agreed yet.
-      if (
-        event.event === TRACKING_EVENTS.tripStage ||
-        event.event === TRACKING_EVENTS.status
-      ) {
+      if (event.event === TRACKING_EVENTS.routeChange) {
+        const route = readTripEvent(parseRouteChange, event.event, event.data);
+        if (route) yield put(routeChanged(route));
+        continue;
+      }
+
+      if (event.event === TRACKING_EVENTS.vehicleMeta) {
+        const meta = readTripEvent(parseVehicleMeta, event.event, event.data);
+        if (meta) yield put(vehicleMetaUpdate(meta));
+        continue;
+      }
+
+      if (event.event === TRACKING_EVENTS.driverStatus) {
+        const update = readTripEvent(parseDriverStatusEvent, event.event, event.data);
+        if (!update) continue;
+
+        yield put(trackingStatusUpdate(update.driverStatus));
+
+        if (isTripFinished(update.driverStatus)) {
+          console.log("TRACKING ended:", update.driverStatus);
+          yield put(trackingDisconnected());
+          result.ended = true;
+          return result;
+        }
+        continue;
+      }
+
+      if (event.event === TRACKING_EVENTS.notification) {
+        const notification = readTripEvent(parseNotificationEvent, event.event, event.data);
+        if (notification) yield put(trackingNotification(notification));
         continue;
       }
 
