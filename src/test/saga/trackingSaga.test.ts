@@ -51,30 +51,33 @@ const payload = ({
   ...rest,
 });
 
-/** Real backend output for trip T146 (route shortened). */
+/** Backend output in the new event shapes (route shortened). */
 const SAMPLE_STREAM = `event: eta
-data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_S","driverStatus":"","eta":0,"distance":0}
+data: {"eta":0,"distance":0}
 
 event: location
-data: {"Lat":22.47128,"Lng":88.38932,"Timestamp":"2026-10-15T07:18:32.059547Z"}
+data: {"lat":22.47128,"lng":88.38932,"timestamp":"2026-10-15T07:18:32.059547Z"}
+
+event: driver_status
+data: {"driverStatus":"POB"}
 
 event: route_change
-data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","routePath":[{"lat":22.47128,"lng":88.38932000000001},{"lat":22.471570000000003,"lng":88.38917000000001},{"lat":22.471330000000002,"lng":88.38863},{"lat":22.456290000000003,"lng":88.39985}]}
+data: {"route":[{"lat":22.47128,"lng":88.38932000000001},{"lat":22.471570000000003,"lng":88.38917000000001},{"lat":22.471330000000002,"lng":88.38863},{"lat":22.456290000000003,"lng":88.39985}]}
 
 event: eta
-data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","eta":651,"distance":2666}
+data: {"eta":651,"distance":2666}
 
 event: vehicle_meta
-data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","reroute":false}
+data: {"reroute":false}
 
 event: location
-data: {"Lat":22.471505388984138,"Lng":88.38920341949095,"Timestamp":"2026-10-15T07:18:33.832644Z"}
+data: {"lat":22.471505388984138,"lng":88.38920341949095,"timestamp":"2026-10-15T07:18:33.832644Z"}
 
 event: eta
-data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","eta":644,"distance":2638.222221017453}
+data: {"eta":644,"distance":2638.222221017453}
 
 event: vehicle_meta
-data: {"driverID":"DR3","bookingID":"T146","tripID":"T146","tripType":"TRIP_D","driverStatus":"POB","reroute":false,"bearing":334}
+data: {"reroute":false,"bearing":334}
 
 `;
 
@@ -177,9 +180,8 @@ describe("trackingSaga", () => {
     expect(console.warn).not.toHaveBeenCalled();
   });
 
-  describe("eta, route_change and vehicle_meta", () => {
-    const ids = { driverID: "DRIVER_123", bookingID: "B1", tripID: "T123", tripType: "TRIP_S" };
-    const routePath = [
+  describe("eta, route_change, vehicle_meta and driver_status", () => {
+    const route = [
       { lat: 22.5726, lng: 88.3639 },
       { lat: 22.5736, lng: 88.3649 },
     ];
@@ -188,62 +190,115 @@ describe("trackingSaga", () => {
       const stream = fakeStream();
       const store = await startWith(stream.response);
 
-      stream.sendEvent({ ...ids, eta: 300, distance: 1500 }, "eta");
-      stream.sendEvent({ ...ids, driverStatus: "ENROUTE", routePath }, "route_change");
-      stream.sendEvent(
-        { ...ids, driverStatus: "ENROUTE", reroute: false, bearing: 90 },
-        "vehicle_meta",
-      );
+      stream.sendEvent({ eta: 300, distance: 1500 }, "eta");
+      stream.sendEvent({ route }, "route_change");
+      stream.sendEvent({ reroute: false, bearing: 90 }, "vehicle_meta");
       await settle();
 
-      const { route, tracking } = store.getState();
-      expect(route.eta).toMatchObject({ ...ids, etaSeconds: 300, distanceMeters: 1500 });
-      expect(route.route).toEqual({ ...ids, driverStatus: "ENROUTE", routePath });
-      expect(route.vehicleMeta).toEqual({
-        ...ids,
-        driverStatus: "ENROUTE",
-        reroute: false,
-        bearing: 90,
-      });
+      const { route: routeState, tracking } = store.getState();
+      expect(routeState.eta).toMatchObject({ etaSeconds: 300, distanceMeters: 1500 });
+      expect(routeState.route).toEqual({ routePath: route });
+      expect(routeState.vehicleMeta).toEqual({ reroute: false, bearing: 90 });
       expect(tracking.data).toBeNull();
       expect(console.warn).not.toHaveBeenCalled();
     });
 
-    it("ignores invalid events, other trips, trip_stage and status", async () => {
+    it("puts notification messages into redux without moving the car", async () => {
       const stream = fakeStream();
       const store = await startWith(stream.response);
 
-      stream.sendEvent({ ...ids, driverStatus: "ENROUTE", routePath: [routePath[0]] }, "route_change");
-      stream.sendEvent({ ...ids, eta: -1, distance: 10 }, "eta");
-      stream.sendEvent({ ...ids, tripID: "OTHER", eta: 60, distance: 10 }, "eta");
-      stream.sendEvent({ stage: "PICKUP" }, "trip_stage");
-      stream.sendEvent({ status: "ok" }, "status");
+      stream.sendEvent({ message: "Your driver is 2 minutes away" }, "notification");
       await settle();
+      expect(store.getState().tracking.notification).toMatchObject({
+        message: "Your driver is 2 minutes away",
+      });
+
+      stream.sendEvent({ message: "Your driver has arrived" }, "notification");
+      await settle();
+      expect(store.getState().tracking.notification).toMatchObject({
+        message: "Your driver has arrived",
+      });
+      expect(store.getState().tracking.data).toBeNull();
+      expect(console.warn).not.toHaveBeenCalled();
+    });
+
+    it("keeps the last bearing when vehicle_meta leaves it out", async () => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      stream.sendEvent({ reroute: false, bearing: 270 }, "vehicle_meta");
+      stream.sendEvent({ reroute: true }, "vehicle_meta");
+      await settle();
+
+      expect(store.getState().route.vehicleMeta).toEqual({ reroute: true, bearing: 270 });
+    });
+
+    it("ignores invalid events", async () => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      stream.sendEvent({ route: [route[0]] }, "route_change");
+      stream.sendEvent({ routePath: route }, "route_change");
+      stream.sendEvent({ eta: -1, distance: 10 }, "eta");
+      stream.sendEvent({ bearing: 10 }, "vehicle_meta");
+      stream.sendEvent({ driverStatus: "FLYING" }, "driver_status");
+      stream.sendEvent({ message: "" }, "notification");
+      await settle();
+
+      expect(store.getState().tracking.notification).toBeNull();
 
       expect(store.getState().route).toEqual({ route: null, eta: null, vehicleMeta: null });
       expect(store.getState().tracking.data).toBeNull();
+      expect(store.getState().tracking.driverStatus).toBeNull();
     });
 
-    it("updates the driver status of the trip", async () => {
+    it("skips eta 0 / 0 before any real ETA, then shows it", async () => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      stream.sendEvent({ eta: 0, distance: 0 }, "eta");
+      await settle();
+      expect(store.getState().route.eta).toBeNull();
+
+      stream.sendEvent({ eta: 60, distance: 180 }, "eta");
+      stream.sendEvent({ eta: 0, distance: 0 }, "eta");
+      await settle();
+      expect(store.getState().route.eta).toMatchObject({ etaSeconds: 0, distanceMeters: 0 });
+    });
+
+    it("shows eta 0 / 0 once the driver has arrived", async () => {
+      const stream = fakeStream();
+      const store = await startWith(stream.response);
+
+      stream.sendEvent({ driverStatus: "ARRIVED" }, "driver_status");
+      stream.sendEvent({ eta: 0, distance: 0 }, "eta");
+      await settle();
+      expect(store.getState().route.eta).toMatchObject({ etaSeconds: 0, distanceMeters: 0 });
+    });
+
+    it.each(["ENROUTE", "ARRIVED", "POB"])("driver_status %s updates the trip status", async (status) => {
       const stream = fakeStream();
       const store = await startWith(stream.response);
 
       stream.sendEvent(payload());
-      stream.sendEvent({ ...ids, driverStatus: "POB", reroute: false, bearing: 10 }, "vehicle_meta");
+      stream.sendEvent({ driverStatus: status }, "driver_status");
       await settle();
 
-      expect(store.getState().tracking.data?.driverStatus).toBe("POB");
+      expect(store.getState().tracking.driverStatus).toBe(status);
+      expect(store.getState().tracking.data?.driverStatus).toBe(status);
+      expect(store.getState().tracking.connected).toBe(true);
     });
 
-    it("ends the trip on COMPLETED without reconnecting", async () => {
+    it("ends the trip on driver_status COMPLETED without reconnecting", async () => {
       vi.useFakeTimers();
       const stream = fakeStream();
       const store = await startWith(stream.response);
 
       const calls = trackingActionMock.mock.calls.length;
 
-      stream.sendEvent({ ...ids, driverStatus: "COMPLETED", eta: 0, distance: 0 }, "eta");
+      stream.sendEvent({ driverStatus: "COMPLETED" }, "driver_status");
       await settle();
+      expect(store.getState().tracking.driverStatus).toBe("COMPLETED");
       expect(store.getState().tracking.connected).toBe(false);
 
       await vi.advanceTimersByTimeAsync(60_000);
@@ -270,7 +325,7 @@ describe("trackingSaga", () => {
     expect(store.getState().tracking.data).toMatchObject({ lat: 22.5726 });
   });
 
-  it("handles the live backend stream (no snapshot, capitalized location keys)", async () => {
+  it("handles the live backend stream without a snapshot", async () => {
     const stream = fakeStream();
     trackingActionMock.mockReturnValue(Promise.resolve(stream.response));
     const store = createAppStore();

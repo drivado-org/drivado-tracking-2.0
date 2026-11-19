@@ -3,14 +3,7 @@ import reducer, { routeChanged, selectRoutePath } from "@/store/route/routeSlice
 
 const initial = reducer(undefined, { type: "@@INIT" });
 
-const change = (routePath: RouteChange["routePath"]): RouteChange => ({
-  driverID: "DRIVER_123",
-  bookingID: "B1",
-  tripID: "T123",
-  tripType: "TRIP_S",
-  driverStatus: "ENROUTE",
-  routePath,
-});
+const change = (routePath: RouteChange["routePath"]): RouteChange => ({ routePath });
 
 const PATH = [
   { lat: 22.57, lng: 88.4 },

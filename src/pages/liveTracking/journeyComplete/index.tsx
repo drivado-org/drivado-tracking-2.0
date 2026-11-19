@@ -1,4 +1,13 @@
 import { useState } from "react";
+import { CheckCircle2 } from "lucide-react";
+
+import JourneyCompleteHeader from "@/pages/liveTracking/journeyComplete/components/JourneyCompleteHeader";
+// import CompletedTripSummary from "@/pages/liveTracking/journeyComplete/components/CompletedTripSummary";
+import CompletedDriverCard from "@/pages/liveTracking/journeyComplete/components/CompletedDriverCard";
+import JourneyRating from "@/pages/liveTracking/journeyComplete/components/JourneyRating";
+// import FeedbackTags from "./FeedbackTags";
+import FeedbackNote from "@/pages/liveTracking/journeyComplete/components/FeedbackNote";
+import FeedbackActions from "@/pages/liveTracking/journeyComplete/components/FeedbackActions";
 
 import type {
   CompletedTripData,
@@ -10,29 +19,29 @@ import type {
 interface JourneyCompleteProps {
   trip: CompletedTripData;
   driver: DriverData;
+  isNoShow?: boolean;
+  isSubmitting?: boolean;
+  submitError?: string | null;
+  isSubmitted?: boolean;
   onSubmitFeedback: (feedback: JourneyFeedback) => void;
   onSkip: () => void;
 }
 
-import JourneyCompleteHeader from "@/pages/liveTracking/journeyComplete/components/JourneyCompleteHeader";
-import CompletedTripSummary from "@/pages/liveTracking/journeyComplete/components/CompletedTripSummary";
-import CompletedDriverCard from "@/pages/liveTracking/journeyComplete/components/CompletedDriverCard";
-import JourneyRating from "@/pages/liveTracking/journeyComplete/components/JourneyRating";
-// import FeedbackTags from "./FeedbackTags";
-import FeedbackNote from "@/pages/liveTracking/journeyComplete/components/FeedbackNote";
-import FeedbackActions from "@/pages/liveTracking/journeyComplete/components/FeedbackActions";
-
 const JourneyComplete = ({
   trip,
   driver,
+  isSubmitting = false,
+  submitError,
+  isSubmitted,
   onSubmitFeedback,
   onSkip,
+  isNoShow = false,
 }: JourneyCompleteProps) => {
   const [rating, setRating] = useState(0);
   //   const [selectedTags, setSelectedTags] = useState<FeedbackTag[]>([]);
   const [note, setNote] = useState("");
 
-  const canSubmit = rating > 0;
+  const canSubmit = rating > 0 && !isSubmitting;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -48,31 +57,91 @@ const JourneyComplete = ({
 
   return (
     <main className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-3">
-      <div className="my-auto max-h-[95vh] w-full max-w-125 overflow-y-auto rounded-3xl bg-white shadow-2xl px-5 py-6">
-        <JourneyCompleteHeader dropoffLocation={trip.dropoffLocation} />
+      <div className="custom-scrollbar my-auto max-h-[95vh] w-full max-w-125 overflow-y-auto rounded-3xl bg-white shadow-2xl px-5 py-6">
+        {isNoShow ? (
+          <div className="flex flex-col items-center py-10 text-center">
+            <CheckCircle2
+              size={64}
+              strokeWidth={1.5}
+              className="text-emerald-600"
+            />
 
-        <CompletedTripSummary
-          distance={trip.distance}
-          duration={trip.duration}
-        />
+            <h2 className="mt-5 text-xl font-bold text-gray-900">
+              Trip has been marked as No Show
+            </h2>
 
-        <CompletedDriverCard trip={trip} driver={driver} />
+            <p className="mt-2 max-w-xs text-sm leading-6 text-gray-500">
+              This trip has been marked as no-show. Thank you.
+            </p>
 
-        <JourneyRating rating={rating} onChange={setRating} />
+            <button
+              type="button"
+              onClick={onSkip}
+              className="mt-7 w-full cursor-pointer rounded-xl bg-emerald-700 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+            >
+              Done
+            </button>
+          </div>
+        ) : isSubmitted ? (
+          <div
+            className="flex flex-col items-center py-10 text-center"
+            role="status"
+            aria-live="polite"
+          >
+            <CheckCircle2
+              size={64}
+              strokeWidth={1.5}
+              className="text-emerald-600"
+            />
 
-        {/* <FeedbackTags selectedTags={selectedTags} onChange={setSelectedTags} /> */}
+            <h2 className="mt-5 text-xl font-bold text-gray-900">
+              Thank you for your feedback!
+            </h2>
 
-        <FeedbackNote
-          note={note}
-          onChange={setNote}
-          driverName={driver.driverName}
-        />
+            <p className="mt-2 max-w-md text-sm leading-6 text-gray-500">
+              Your feedback has been submitted successfully. We appreciate you
+              taking the time to rate your driver.
+            </p>
 
-        <FeedbackActions
-          canSubmit={canSubmit}
-          onSubmit={handleSubmit}
-          onSkip={onSkip}
-        />
+            <button
+              type="button"
+              onClick={onSkip}
+              className="mt-7 w-full cursor-pointer rounded-xl bg-emerald-700 px-4 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-800"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <>
+            <JourneyCompleteHeader dropoffLocation={trip.dropoffLocation} />
+
+            <CompletedDriverCard trip={trip} driver={driver} />
+
+            <JourneyRating rating={rating} onChange={setRating} />
+
+            <FeedbackNote
+              note={note}
+              onChange={setNote}
+              driverName={driver.driverName}
+            />
+
+            {submitError && (
+              <p
+                className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600"
+                role="alert"
+              >
+                {submitError}
+              </p>
+            )}
+
+            <FeedbackActions
+              canSubmit={canSubmit}
+              isSubmitting={isSubmitting}
+              onSubmit={handleSubmit}
+              onSkip={onSkip}
+            />
+          </>
+        )}
       </div>
     </main>
   );

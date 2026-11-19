@@ -16,11 +16,13 @@ import useRouteProgress from "../../hooks/useRouteProgress";
 import useShownStatus from "../../hooks/useShownStatus";
 import useTurningHeading from "../../hooks/useTurningHeading";
 import { formatDuration, toEtaMinutes } from "@/utils/etaFormat";
+import type { LatLng } from "@/types/geo";
 import type { CameraMode } from "../../constants/map";
 import { GEOFENCE_SHOW_METERS } from "../../constants/tracking";
 import {
   destinationLabel,
   destinationName,
+  endsAtPickup,
   isDriving,
   isPickupLeg,
   statusNotice,
@@ -31,6 +33,9 @@ import GeofenceArea from "../GeofenceArea";
 import MapCamera from "../MapCamera";
 import type { MapNotice } from "../MapToast";
 import RoutePolyline from "../RoutePolyline";
+
+/** Same empty route every render, so the polyline isn't re-synced for nothing. */
+const NO_ROUTE: LatLng[] = [];
 
 type LiveCarProps = {
   cameraMode?: CameraMode;
@@ -57,11 +62,13 @@ const LiveCar = ({
 
   // Once the passenger is on board, the pickup route is over: until route_change brings the
   // drop-off route, the car keeps driving on its GPS points with no route or marker.
+  // After a no-show the trip ended at the pickup, so that route still marks the pickup.
   const [pickupRoute, setPickupRoute] = useState<typeof routePath>(null);
   if (isPickupLeg(status) && routePath && routePath !== pickupRoute) {
     setPickupRoute(routePath);
   }
-  const route = !isPickupLeg(status) && routePath === pickupRoute ? null : routePath;
+  const route = !endsAtPickup(status) && routePath === pickupRoute ? null : routePath;
+  const noShow = status === "NOSHOW";
 
   const { position, heading } = useCarAnimation(points, bearing, route);
   const { remaining, carPosition, routeHeading } = useRouteProgress(
@@ -100,16 +107,18 @@ const LiveCar = ({
         center={approaching ? destination : null}
         active={inGeofence}
       />
-      <RoutePolyline points={remaining} rerouting={rerouting} />
+      {/* No show: nothing left to drive, so no route line. */}
+      <RoutePolyline points={noShow ? NO_ROUTE : remaining} rerouting={rerouting} />
 
       <DestinationMarker
         position={destination}
         label={destinationLabel(shownStatus)}
-        pin={isPickupLeg(shownStatus)}
+        pin={endsAtPickup(shownStatus)}
       />
       <CarMarker
         position={carPosition}
         heading={carHeading}
+        muted={noShow}
         label={
           eta && isDriving(shownStatus)
             ? formatDuration(toEtaMinutes(eta.etaSeconds))

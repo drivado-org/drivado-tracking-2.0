@@ -1,8 +1,9 @@
 import type { LatLng, TrackPoint } from "@/types/geo";
 import type {
+  DriverStatusUpdate,
+  TripNotification,
   EtaUpdate,
   RouteChange,
-  TripEventBase,
   TripVehicleMeta,
 } from "@/types/route";
 import type { TripSnapshot, TripType } from "@/types/tracking";
@@ -10,16 +11,18 @@ import { isValidLatitude, isValidLongitude, parseLatLng } from "./latLng";
 import { isPlainObject, toTimestampMs } from "./primitives";
 import { readTripStatus, toPayloadObject } from "./trackingPayload";
 
-// Checks each event exactly like the backend's `validate` tags; any failed rule rejects the event.
-// The status is read from bookingStatus, else driverStatus (see readTripStatus).
-//   event: eta          ETAUpdate       { driverID, bookingID, tripID, tripType, driverStatus?, eta, distance }
-//   event: route_change RouteChange     { driverID, bookingID, tripID, tripType, driverStatus, routePath }
-//   event: vehicle_meta TripVehicleMeta { driverID, bookingID, tripID, tripType, driverStatus, reroute, bearing? }
-//     bearing is sometimes left out ({"reroute":false}); then it is null and the last one is kept.
-//   event: snapshot     TripSnapshot    { driverID, bookingID, tripID, tripType, driverStatus,
-//                                         location?: { lat, lng, timestamp }, eta?, distance?, route?, bearing? }
+// Payloads on GET /trips/{tripID}/stream. Any failed rule rejects the event.
+//   event: snapshot      { bookingID, driverID, driverStatus, tripID, tripType,
+//                          location?: { lat, lng, timestamp }, eta?, distance?, route?, bearing? }
 //     Sent once on connect. A bad optional field is dropped, not the whole snapshot.
-//   RoutePoint          { lat, lng }
+//   event: eta           { eta, distance }
+//   event: route_change  { route: RoutePoint[] }   (at least 2 points)
+//   event: vehicle_meta  { reroute, bearing? }
+//     bearing is sometimes left out ({"reroute":false}); then it is null and the last one is kept.
+//   event: driver_status { driverStatus }
+//   event: notification  { message }
+//   RoutePoint           { lat, lng }
+// Only the snapshot carries the trip ids.
 
 const TRIP_TYPES: readonly TripType[] = ["TRIP_S", "TRIP_D"];
 
@@ -32,19 +35,9 @@ const oneOf = <T extends string>(values: readonly T[], value: unknown): value is
 const isNonNegativeNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value) && value >= 0;
 
-/** driverID, bookingID, tripID and tripType: required on every event. */
-const parseBase = (payload: Record<string, unknown>): TripEventBase | null => {
-  const { driverID, bookingID, tripID, tripType } = payload;
-  if (
-    !isRequiredString(driverID) ||
-    !isRequiredString(bookingID) ||
-    !isRequiredString(tripID) ||
-    !oneOf(TRIP_TYPES, tripType)
-  ) {
-    return null;
-  }
-  return { driverID, bookingID, tripID, tripType };
-};
+/** bearing: gte=0, lt=360. */
+const isValidBearing = (value: unknown): value is number =>
+  isNonNegativeNumber(value) && value < 360;
 
 /** RoutePoint: lat/lng numbers in range; 0,0 is a missing GPS fix. */
 const parseRoutePoint = (raw: unknown): LatLng | null => {
@@ -62,26 +55,19 @@ const parseRoutePath = (raw: unknown): LatLng[] | null => {
   return points.some((point) => point === null) ? null : (points as LatLng[]);
 };
 
+/** eta: integer seconds >= 0; distance: meters >= 0. */
+const isValidEta = (eta: unknown): eta is number =>
+  isNonNegativeNumber(eta) && Number.isInteger(eta);
+
 /** `now` is when the event arrived; the arrival time is counted from it. Never throws. */
 export const parseEtaEvent = (raw: unknown, now = Date.now()): EtaUpdate | null => {
   const payload = toPayloadObject(raw);
   if (!payload) return null;
 
-  const base = parseBase(payload);
-  if (!base) return null;
-
-  // omitempty: missing or "" is fine, anything else must be a known status.
   const { eta, distance } = payload;
-  const driverStatus = readTripStatus(payload);
-  if (driverStatus === null) return null;
-
-  // eta is an int64 of seconds.
-  if (!isNonNegativeNumber(eta) || !Number.isInteger(eta)) return null;
-  if (!isNonNegativeNumber(distance)) return null;
+  if (!isValidEta(eta) || !isNonNegativeNumber(distance)) return null;
 
   return {
-    ...base,
-    driverStatus: driverStatus ?? null,
     etaSeconds: eta,
     distanceMeters: distance,
     arrivalTime: new Date(now + eta * 1000).toISOString(),
@@ -89,44 +75,54 @@ export const parseEtaEvent = (raw: unknown, now = Date.now()): EtaUpdate | null 
 };
 
 /**
- * The stream opens with { driverStatus: "", eta: 0, distance: 0 } before the route is known.
- * It is valid but says nothing: showing it would read "0 min, arriving now".
+ * { eta: 0, distance: 0 } is sent both before the route is known and on arrival.
+ * Before any real ETA it says nothing (it would read "0 min, arriving now").
  */
-export const isEtaPending = (eta: EtaUpdate): boolean =>
-  eta.driverStatus === null && eta.etaSeconds === 0 && eta.distanceMeters === 0;
+export const isEtaEmpty = (eta: EtaUpdate): boolean =>
+  eta.etaSeconds === 0 && eta.distanceMeters === 0;
 
-/** Never throws. */
+/** `event: route_change` { route }. Never throws. */
 export const parseRouteChange = (raw: unknown): RouteChange | null => {
   const payload = toPayloadObject(raw);
   if (!payload) return null;
 
-  const base = parseBase(payload);
-  const { routePath } = payload;
-  const driverStatus = readTripStatus(payload);
-  if (!base || !driverStatus) return null;
-
-  const points = parseRoutePath(routePath);
-  if (!points) return null;
-
-  return { ...base, driverStatus, routePath: points };
+  const routePath = parseRoutePath(payload.route);
+  return routePath ? { routePath } : null;
 };
 
-/** Never throws. */
+/** `event: vehicle_meta` { reroute, bearing? }. Never throws. */
 export const parseVehicleMeta = (raw: unknown): TripVehicleMeta | null => {
   const payload = toPayloadObject(raw);
   if (!payload) return null;
 
-  const base = parseBase(payload);
   const { reroute, bearing } = payload;
-  const driverStatus = readTripStatus(payload);
-  if (!base || !driverStatus) return null;
   if (typeof reroute !== "boolean") return null;
 
-  // Optional; when sent: gte=0, lt=360.
+  // Optional; when sent it must be in range.
   const hasBearing = bearing !== undefined && bearing !== null;
-  if (hasBearing && (!isNonNegativeNumber(bearing) || bearing >= 360)) return null;
+  if (hasBearing && !isValidBearing(bearing)) return null;
 
-  return { ...base, driverStatus, reroute, bearing: hasBearing ? (bearing as number) : null };
+  return { reroute, bearing: hasBearing ? (bearing as number) : null };
+};
+
+/** `event: driver_status` { driverStatus }. Never throws. */
+export const parseDriverStatusEvent = (raw: unknown): DriverStatusUpdate | null => {
+  const payload = toPayloadObject(raw);
+  if (!payload) return null;
+
+  const driverStatus = readTripStatus(payload);
+  return driverStatus ? { driverStatus } : null;
+};
+
+/** `event: notification` { message }. `now` is when the event arrived. Never throws. */
+export const parseNotificationEvent = (
+  raw: unknown,
+  now = Date.now(),
+): TripNotification | null => {
+  const payload = toPayloadObject(raw);
+  if (!payload || !isRequiredString(payload.message)) return null;
+
+  return { message: payload.message.trim(), receivedAt: new Date(now).toISOString() };
 };
 
 /** Snapshot `location`: { lat, lng, timestamp }; undefined when missing or invalid. */
@@ -146,24 +142,32 @@ export const parseTripSnapshot = (raw: unknown): TripSnapshot | null => {
   const payload = toPayloadObject(raw);
   if (!payload) return null;
 
-  const base = parseBase(payload);
+  const { driverID, bookingID, tripID, tripType } = payload;
   const driverStatus = readTripStatus(payload);
-  if (!base || !driverStatus) return null;
+  if (
+    !isRequiredString(driverID) ||
+    !isRequiredString(bookingID) ||
+    !isRequiredString(tripID) ||
+    !oneOf(TRIP_TYPES, tripType) ||
+    !driverStatus
+  ) {
+    return null;
+  }
 
-  const snapshot: TripSnapshot = { ...base, driverStatus };
+  const snapshot: TripSnapshot = { driverID, bookingID, tripID, tripType, driverStatus };
   const { eta, distance, bearing } = payload;
 
   const location = parseSnapshotLocation(payload.location);
   if (location) snapshot.location = location;
 
   // 0 is real: "arriving now" / "facing north".
-  if (isNonNegativeNumber(eta) && Number.isInteger(eta)) snapshot.eta = eta;
+  if (isValidEta(eta)) snapshot.eta = eta;
   if (isNonNegativeNumber(distance)) snapshot.distance = distance;
 
   const route = parseRoutePath(payload.route);
   if (route) snapshot.route = route;
 
-  if (isNonNegativeNumber(bearing) && bearing < 360) snapshot.bearing = bearing;
+  if (isValidBearing(bearing)) snapshot.bearing = bearing;
 
   return snapshot;
 };

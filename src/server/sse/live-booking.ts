@@ -13,9 +13,9 @@ export const createLiveTrackingConnection = (
     "location",
     "eta",
     "route_change",
-    "trip_stage",
     "vehicle_meta",
-    "status",
+    "driver_status",
+    "notification",
   ];
 
   eventTypes.forEach((type) => {
