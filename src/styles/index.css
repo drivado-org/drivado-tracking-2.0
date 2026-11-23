@@ -272,3 +272,9 @@ code {
     @apply font-sans;
   }
 }
+
+@media (max-width: 767px) {
+  .tracking-dashboard {
+    overscroll-behavior-y: none;
+  }
+}
