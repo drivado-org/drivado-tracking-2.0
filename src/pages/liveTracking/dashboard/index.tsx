@@ -12,6 +12,7 @@ import type { RootState } from "@/store";
 import { selectEta } from "@/store/route/routeSlice";
 import { selectDriverStatus } from "@/store/tracking/trackingSlice";
 import { formatClockTime, toEtaMinutes, toKilometres } from "@/utils/etaFormat";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import type {
   BookingIdData,
   BookingStatusData,
@@ -47,15 +48,15 @@ const LiveTrackingDashboard = ({
 }: LiveTrackingDashboardProps) => {
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
-  // -----------START MOBILE SWIPE HANDLING-------------
-  const touchStart = useRef<{
+  // ----------- START MOBILE SWIPE HANDLING -------------
+
+  const pointerStart = useRef<{
     x: number;
     y: number;
+    pointerId: number;
   } | null>(null);
 
-  const scrollContainer = useRef<Element | null>(null);
-
-  const isMobileScreen = () => window.matchMedia("(max-width: 767px)").matches;
+  const didDrag = useRef(false);
 
   const handleToggle = () => {
     setIsDetailsExpanded((prev) => {
@@ -65,53 +66,59 @@ const LiveTrackingDashboard = ({
     });
   };
 
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isMobileScreen()) return;
+  const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (window.innerWidth >= 768) return;
 
-    if ((e.target as HTMLElement).closest("button")) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
 
-    const touch = e.touches[0];
-
-    touchStart.current = {
-      x: touch.clientX,
-      y: touch.clientY,
+    pointerStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      pointerId: e.pointerId,
     };
 
-    scrollContainer.current = (e.target as HTMLElement).closest(
-      "[data-sheet-scroll]",
-    );
+    e.currentTarget.setPointerCapture(e.pointerId);
   };
 
-  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isMobileScreen() || !touchStart.current) return;
+  const handlePointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const start = pointerStart.current;
 
-    const touch = e.changedTouches[0];
+    if (!start || start.pointerId !== e.pointerId) return;
 
-    const deltaY = touch.clientY - touchStart.current.y;
-    const deltaX = touch.clientX - touchStart.current.x;
+    const deltaY = e.clientY - start.y;
+    const deltaX = e.clientX - start.x;
+
+    pointerStart.current = null;
 
     if (Math.abs(deltaY) < 50 || Math.abs(deltaY) < Math.abs(deltaX)) {
-      touchStart.current = null;
       return;
     }
 
-    // Swipe UP → Expand dashboard
+    // Swipe up - Expand
     if (deltaY < -50 && !isDetailsExpanded) {
+      didDrag.current = true;
       handleToggle();
     }
 
-    // Swipe DOWN → Collapse dashboard
+    // Swipe down - Collapse
     else if (deltaY > 50 && isDetailsExpanded) {
-      if (scrollContainer.current && scrollContainer.current.scrollTop > 0) {
-        touchStart.current = null;
-        return;
-      }
-
+      didDrag.current = true;
       handleToggle();
     }
-
-    touchStart.current = null;
   };
+
+  const handlePointerCancel = () => {
+    pointerStart.current = null;
+  };
+
+  const handleClickCapture = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (didDrag.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      didDrag.current = false;
+    }
+  };
+
   // -------END MOBILE SWIPE HANDLING------------------
 
   // const handleToggle = () => {
@@ -187,12 +194,14 @@ const LiveTrackingDashboard = ({
 
   return (
     <div
-      className="touch-pan-y relative flex h-95 min-h-0 w-full flex-col bg-white md:h-full"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={() => {
-        touchStart.current = null;
-      }}
+      className="tracking-dashboard relative flex h-95 min-h-0 w-full flex-col bg-white touch-none md:touch-auto md:h-full"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onClickCapture={handleClickCapture}
+      // onTouchCancel={() => {
+      //   touchStart.current = null;
+      // }}
     >
       {/* Mobile Header */}
       <DashboardHeader
@@ -213,14 +222,8 @@ const LiveTrackingDashboard = ({
         <BookingId booking={bookingIdData} />
         <BookingStatus statuses={statuses} />
         {driver && <DriverDetails driver={driver} />}
+
         <div
-          // ref={(el) => {
-          //   if (el) {
-          //     console.log("Scroll height:", el.scrollHeight);
-          //     console.log("Client height:", el.clientHeight);
-          //     console.log("Can scroll:", el.scrollHeight > el.clientHeight);
-          //   }
-          // }}
           data-sheet-scroll
           className={`custom-scrollbar min-h-0 shrink-0 overflow-y-auto bg-[#f2eeef] py-3 shadow-sm
     ${isDetailsExpanded ? "block max-h-65 xxs:max-h-none xs:max-h-90 sm:max-h-75" : "hidden"}
@@ -229,6 +232,7 @@ const LiveTrackingDashboard = ({
           style={{
             WebkitOverflowScrolling: "touch",
             touchAction: "pan-y",
+            overscrollBehaviorY: "contain",
           }}
         >
           <JourneyDetails journey={journeyData} />
